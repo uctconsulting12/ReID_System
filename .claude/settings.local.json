@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -c \"import sys; sys.path.insert\\(0, 'src'\\); from crosscamreid.config import load_config; cfg = load_config\\('config/config.yaml'\\); print\\('OK', cfg.gating.face_match_thresh, cfg.models.face_onnx_path, cfg.database.qdrant.face_collection\\)\")",
+      "Bash(PYTHONPATH=production/src python *)",
+      "Bash(python -c ' *)",
+      "Bash(python -m py_compile src/crosscamreid/server/__init__.py src/crosscamreid/server/ffmpeg_hls.py src/crosscamreid/server/hls_session.py app_hls.py)",
+      "Bash(python -m py_compile /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/server/__init__.py /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/server/ffmpeg_hls.py /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/server/hls_session.py /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/app_hls.py)",
+      "Bash(python -m py_compile /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/server/__init__.py /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/server/ffmpeg_hls.py /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/server/hls_session.py /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/processor.py /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/config.py /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/app_hls.py)",
+      "Bash(python -m py_compile /d/Cross_cam_ReID/keypoint_REID/CrossCamReid/production/src/crosscamreid/overlay.py)"
+    ]
+  }
+}

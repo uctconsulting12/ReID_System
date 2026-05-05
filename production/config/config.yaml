@@ -1,0 +1,87 @@
+cameras:
+  - id: "cam1"
+    role: "MASTER"
+    source: "rtsp://admin:hikvision_ipcam@192.168.1.101:554/Streaming/Channels/101"
+  - id: "cam2"
+    role: "SLAVE"
+    source: "rtsp://admin:industry4@192.168.1.8:554/cam/realmonitor?channel=1&subtype=0"
+
+models:
+  pose_path: "../../model_files/yolo11m-pose.pt"
+  reid_onnx_path: "../../model_files/resnet50-v2-7.onnx"
+  reid_tensorrt_engine_path: "../../model_files/resnet50-v2-7.engine"
+  # fast-reid backend (active when runtime.reid_backend == "fastreid").
+  # Paths are resolved relative to this YAML file.
+  fastreid_root: "../../fast-reid"
+  fastreid_config: "../../fast-reid/configs/Market1501/bagtricks_R50-ibn.yml"
+  fastreid_weights: "../../localtest/model_files/market_bot_R50-ibn.pth"
+  fastreid_device: "cuda"
+
+capture:
+  buffer_size: 1
+  reconnect_initial_delay_sec: 2.0
+  reconnect_max_delay_sec: 30.0
+  max_read_failures: 30
+
+gating:
+  person_conf_thresh: 0.50
+  keypoint_conf_thresh: 0.50
+  match_thresh: 0.95   # optimal 0.95
+  min_region_side: 30
+  region_pad_frac: 0.05
+  max_embeddings_per_sid: 30
+
+enrollment:
+  qualify_frames: 30
+  enroll_frames: 5
+  # true  -> assign existing SID immediately if any frame within the qualify
+  #          window crosses gating.match_thresh (fast hand-off, but more risk
+  #          of false-locking to the wrong SID).
+  # false -> wait the full qualify_frames, then lock by majority vote;
+  #          if no SID accumulates enough votes, enroll a new SID with
+  #          enroll_frames embeddings.
+  early_lock_on_match: true
+
+database:
+  qdrant:
+    mode: "local"                            # local | cloud
+    local_path: "../production_embedding_DB" # used when mode=local
+    cloud_url: "https://e74cee6c-ffc7-46ee-a45c-28b7cc47d838.sa-east-1-0.aws.cloud.qdrant.io"                            # e.g. https://xxx.cloud.qdrant.io (mode=cloud)
+    cloud_api_key: QDRANT_API_KEY                    # or set env QDRANT_API_KEY
+    collection: "person_reid_torso"
+    keep_db: false
+
+  postgres:
+    enabled: true                            # set false to skip DB saving
+    # All credentials via .env: DB_HOST, DB_NAME, DB_USER, DB_PASSWORD, DB_PORT
+
+runtime:
+  tracker: "./bytetrack_consistent.yaml"   # tuned for TID consistency through occlusion; use "bytetrack.yaml" for ultralytics defaults
+  reid_backend: "fastreid"   # onnxruntime | tensorrt | fastreid
+  no_display: false
+  display_width: 1600
+  log_json: false
+  # If true, every crop is converted to grayscale (then back to 3 identical
+  # channels) before the ReID embedding is computed. Affects BOTH enrollment
+  # and search, so the gallery and queries stay in the same color space.
+  # Note: switching this flag mid-DB will make stored color embeddings
+  # incompatible with new grayscale queries (and vice versa).
+  embed_grayscale: false
+  # If true, on startup the user is prompted to draw an ROI on the master
+  # camera's first frame (drag rectangle, ENTER to confirm, c to cancel).
+  # New SIDs are then enrolled ONLY for detections whose bbox is FULLY
+  # contained in the ROI. Detections outside the ROI on the master feed
+  # (and the entire slave feed) only match against existing SIDs. Requires
+  # no_display=false (CLI runner). The HLS server (app_hls.py) auto-disables
+  # this since there is no GUI to draw the ROI in.
+  roi_based_master: true
+  # If true, when a tracker ID has already been locked to an SID and then
+  # transiently fails the keypoint gate (e.g. partial occlusion), reuse the
+  # previously locked SID instead of falling back to UNKNOWN. The SID stays
+  # tied to the tracker for as long as the tracker survives.
+  sid_persist_on_kp_loss: true
+  # Keep track state alive for this many missed frames and allow recovery of
+  # a new raw tracker ID back to the old stable TID via IoU.
+  tid_recover_max_missing_frames: 2
+  # IoU threshold to re-link new raw IDs to recently lost stable TIDs.
+  tid_recover_iou_threshold: 0.50

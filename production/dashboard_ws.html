@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CrossCamReid WebSocket Dashboard (Production)</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #111827;
+      --muted: #94a3b8;
+      --text: #e5e7eb;
+      --ok: #16a34a;
+      --warn: #d97706;
+      --bad: #dc2626;
+      --line: #334155;
+      --accent: #0ea5e9;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      background: radial-gradient(circle at top, #1e293b 0%, var(--bg) 50%);
+      color: var(--text);
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    h1 {
+      margin: 0 0 12px;
+      font-size: 24px;
+    }
+
+    .row {
+      display: grid;
+      gap: 12px;
+    }
+
+    .row.controls {
+      grid-template-columns: 1fr 1fr 1fr auto auto;
+      align-items: end;
+    }
+
+    .card {
+      background: linear-gradient(180deg, #111827, #0b1220);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    input,
+    textarea,
+    button {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid #475569;
+      background: #0b1220;
+      color: var(--text);
+      padding: 9px 10px;
+      font-size: 14px;
+    }
+
+    textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 600;
+      border-color: #0c4a6e;
+      background: linear-gradient(180deg, #0284c7, #0369a1);
+    }
+
+    button.secondary {
+      border-color: #52525b;
+      background: linear-gradient(180deg, #3f3f46, #27272a);
+    }
+
+    .status {
+      font-size: 13px;
+      margin-top: 8px;
+      color: var(--muted);
+    }
+
+    .status .dot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background: var(--bad);
+      vertical-align: middle;
+    }
+
+    .status.connected .dot {
+      background: var(--ok);
+    }
+
+    .grid {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+      gap: 12px;
+    }
+
+    .frame {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      object-fit: contain;
+      background: #020617;
+    }
+
+    .meta {
+      margin-top: 8px;
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .det {
+      margin-top: 8px;
+      font-size: 12px;
+      white-space: pre-wrap;
+      color: #cbd5e1;
+    }
+
+    .logs {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #cbd5e1;
+      max-height: 160px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #020617;
+    }
+
+    .badge {
+      display: inline-block;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 3px 8px;
+      font-size: 11px;
+      margin-right: 6px;
+      color: #cbd5e1;
+      background: #0b1220;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <h1>CrossCamReid Dashboard Production</h1>
+
+    <div class="card">
+      <div class="row controls">
+        <div>
+          <label for="wsUrl">WebSocket URL</label>
+          <input id="wsUrl" value="ws://localhost:8000/ws/reid/2022" />
+        </div>
+        <div>
+          <label for="quality">JPEG Quality (30-95)</label>
+          <input id="quality" type="number" min="30" max="95" value="80" />
+        </div>
+        <div>
+          <label for="includeFrame">Include Annotated Frame</label>
+          <input id="includeFrame" type="text" value="true" />
+        </div>
+        <div>
+          <button id="connectBtn">Connect + Start</button>
+        </div>
+        <div>
+          <button id="stopBtn" class="secondary">Stop + Close</button>
+        </div>
+      </div>
+
+      <div style="margin-top: 12px;">
+        <label for="payload">Start Payload (JSON)</label>
+        <textarea id="payload">{
+  "action": "start_stream",
+  "include_annotated_frame": true,
+  "frame_jpeg_quality": 80,
+  "cameras": [
+    {"cam_id": "cam1", "role": "MASTER", "rtsp_url": "rtsp://admin:hikvision_ipcam@192.168.1.101:554/Streaming/Channels/101"},
+    {"cam_id": "cam2", "role": "SLAVE", "rtsp_url": "rtsp://admin:industry4@192.168.1.8:554/cam/realmonitor?channel=1&subtype=0"}
+  ]
+}</textarea>
+      </div>
+
+      <div id="status" class="status"><span class="dot"></span>Disconnected</div>
+    </div>
+
+    <div id="cards" class="grid"></div>
+    <div id="logs" class="logs"></div>
+  </div>
+
+  <script>
+    let ws = null;
+    const cardsByCam = new Map();
+
+    const wsUrlEl = document.getElementById("wsUrl");
+    const qualityEl = document.getElementById("quality");
+    const includeFrameEl = document.getElementById("includeFrame");
+    const payloadEl = document.getElementById("payload");
+    const statusEl = document.getElementById("status");
+    const cardsEl = document.getElementById("cards");
+    const logsEl = document.getElementById("logs");
+
+    function log(msg) {
+      const now = new Date().toLocaleTimeString();
+      logsEl.textContent = `[${now}] ${msg}\n` + logsEl.textContent;
+    }
+
+    function setStatus(connected, text) {
+      statusEl.className = connected ? "status connected" : "status";
+      statusEl.innerHTML = `<span class="dot"></span>${text}`;
+    }
+
+    function ensureCard(camId) {
+      if (cardsByCam.has(camId)) return cardsByCam.get(camId);
+
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <strong>${camId}</strong>
+          <div>
+            <span class="badge" data-k="fps">fps: -</span>
+            <span class="badge" data-k="count">frame: -</span>
+            <span class="badge" data-k="det">det: -</span>
+          </div>
+        </div>
+        <img class="frame" alt="annotated frame ${camId}">
+        <div class="meta"></div>
+        <div class="det"></div>
+      `;
+      cardsEl.appendChild(card);
+
+      const obj = {
+        card,
+        img: card.querySelector(".frame"),
+        meta: card.querySelector(".meta"),
+        det: card.querySelector(".det"),
+        fps: card.querySelector('[data-k="fps"]'),
+        count: card.querySelector('[data-k="count"]'),
+        detCount: card.querySelector('[data-k="det"]')
+      };
+      cardsByCam.set(camId, obj);
+      return obj;
+    }
+
+    function parseBool(text, fallback) {
+      const t = String(text).trim().toLowerCase();
+      if (t === "true") return true;
+      if (t === "false") return false;
+      return fallback;
+    }
+
+    function connectAndStart() {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        log("WebSocket already open.");
+        return;
+      }
+
+      let payload;
+      try {
+        payload = JSON.parse(payloadEl.value);
+      } catch (e) {
+        alert("Payload is not valid JSON.");
+        return;
+      }
+
+      payload.include_annotated_frame = parseBool(includeFrameEl.value, true);
+      payload.frame_jpeg_quality = Number(qualityEl.value || 80);
+
+      ws = new WebSocket(wsUrlEl.value.trim());
+
+      ws.onopen = () => {
+        setStatus(true, "Connected");
+        log("Connected. Sending start_stream payload.");
+        ws.send(JSON.stringify(payload));
+      };
+
+      ws.onmessage = (ev) => {
+        let data;
+        try {
+          data = JSON.parse(ev.data);
+        } catch {
+          log("Received non-JSON message.");
+          return;
+        }
+
+        if (data.status) {
+          log(`Server: ${data.status} - ${data.message || ""}`);
+          return;
+        }
+
+        const camId = data.cam_id || "unknown";
+        const card = ensureCard(camId);
+
+        card.fps.textContent = `fps: ${data.fps ?? "-"}`;
+        card.count.textContent = `frame: ${data.frame_count ?? "-"}`;
+        card.detCount.textContent = `det: ${data.total_detected ?? "-"}`;
+
+        card.meta.textContent =
+          `frame_id: ${data.frame_id || "-"}\n` +
+          `timestamp: ${data.timestamp || "-"}\n` +
+          `org_id: ${String(data.org_id)} | userid: ${String(data.userid)}`;
+
+        if (data.annotated_frame_b64) {
+          const fmt = data.annotated_frame_format || "jpg";
+          card.img.src = `data:image/${fmt};base64,${data.annotated_frame_b64}`;
+        }
+
+        if (Array.isArray(data.detections)) {
+          card.det.textContent = data.detections.map((d, i) =>
+            `#${i + 1} track=${d.track_id} sid=${d.sid} phase=${d.phase} keypoint_valid=${d.keypoint_valid}`
+          ).join("\n");
+        }
+      };
+
+      ws.onerror = () => {
+        log("WebSocket error.");
+      };
+
+      ws.onclose = () => {
+        setStatus(false, "Disconnected");
+        log("WebSocket closed.");
+      };
+    }
+
+    function stopAndClose() {
+      if (!ws) return;
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: "stop_stream" }));
+      }
+      ws.close();
+      ws = null;
+    }
+
+    document.getElementById("connectBtn").addEventListener("click", connectAndStart);
+    document.getElementById("stopBtn").addEventListener("click", stopAndClose);
+  </script>
+</body>
+
+</html>

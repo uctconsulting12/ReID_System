@@ -1,0 +1,14 @@
+# Tuned ByteTrack config for TID consistency through short occlusions.
+# Differences vs ultralytics' bundled bytetrack.yaml:
+#   track_buffer:     30  -> 90    (~3 s grace at 30 fps before a lost track is dropped)
+#   new_track_thresh: 0.25 -> 0.60 (only spawn a new TID for confident detections)
+#   match_thresh:     0.8  -> 0.85 (slightly stricter IoU match to offset the longer buffer)
+# track_high_thresh / track_low_thresh / fuse_score kept at defaults.
+
+tracker_type: bytetrack
+track_high_thresh: 0.25
+track_low_thresh:  0.10
+new_track_thresh:  0.60
+track_buffer:      90
+match_thresh:      0.85
+fuse_score:        true
