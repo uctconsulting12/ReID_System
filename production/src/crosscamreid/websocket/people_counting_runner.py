@@ -32,6 +32,7 @@ from ultralytics import YOLO
 
 from ..capture import RTSPCapture
 from ..config import AppConfig
+from ..pose_loader import load_pose_model
 from ..counting.dwell import DwellTracker
 from ..counting.entry_exit import EntryExitTracker
 from ..counting.gpu_stats import gpu_stats
@@ -221,7 +222,11 @@ class _CameraWorker:
 
         # ── load model + open capture ────────────────────────────────────
         try:
-            self._pose = YOLO(self.config.models.pose_path)
+            # .engine files exported without ultralytics metadata default
+            # to task=detect + 80 COCO names, which then crashes
+            # PosePredictor's NMS (nc=80 vs pose's 56-channel output).
+            # load_pose_model patches that on on_predict_start.
+            self._pose = load_pose_model(self.config.models.pose_path)
         except Exception as exc:
             self._send_error(f"failed to load pose model: {exc}")
             return
@@ -420,7 +425,7 @@ class _CameraWorker:
             classes=[0],
             conf=cfg.gating.person_conf_thresh,
             tracker=tracker_path,
-            imgsz=480,
+            imgsz=640,
             half=True,
             verbose=False,
         )[0]

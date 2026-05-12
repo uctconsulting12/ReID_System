@@ -27,9 +27,9 @@ MASTERS_ENABLED: false
 #     source: "rtsp://user:pass@host:554/stream"
 
 models:
-  pose_path: "../../model_files/yolo11m-pose.pt"
+  pose_path: "../../localtest/model_files/yolo11m-pose.engine"
   reid_onnx_path: "../../model_files/resnet50-v2-7.onnx"
-  reid_tensorrt_engine_path: "../../model_files/resnet50-v2-7.engine"
+  reid_tensorrt_engine_path: "../../localtest/model_files/market_bot_R50-ibn.engine"
   # fast-reid backend (active when runtime.reid_backend == "fastreid").
   # Paths are resolved relative to this YAML file.
   fastreid_root: "../../fast-reid"
@@ -93,7 +93,7 @@ runtime:
   # frozen so embeddings of overlapping people don't pollute a SID's gallery.
   occlusion_freeze_embeddings: true
   occlusion_iou_thresh: 0.35
-  reid_backend: "onnxruntime"   # onnxruntime | tensorrt | fastreid
+  reid_backend: "fastreid"   # onnxruntime | tensorrt | fastreid
   no_display: false
   display_width: 1600
   log_json: false

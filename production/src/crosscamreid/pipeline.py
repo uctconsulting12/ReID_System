@@ -9,6 +9,7 @@ from ultralytics import YOLO
 from .capture import RTSPCapture
 from .config import AppConfig
 from .overlay import combine_frames_grid, draw_overlay
+from .pose_loader import load_pose_model
 from .processor import process_master, process_master_roi, process_slave
 from .reid.factory import create_reid_backend
 from .state import TIDStateManager
@@ -146,7 +147,7 @@ def run_app(config: AppConfig) -> int:
     print("[Pose] Loading per-camera pose model instances...")
     pose_models: dict[str, YOLO] = {}
     for cam in config.cameras:
-        pose_models[cam.camera_id] = YOLO(config.models.pose_path)
+        pose_models[cam.camera_id] = load_pose_model(config.models.pose_path)
 
     reid_backend = create_reid_backend(
         backend=config.runtime.reid_backend,

@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python -m py_compile src/crosscamreid/reid/tensorrt_backend.py)",
+      "Bash(python -m py_compile src/crosscamreid/websocket/people_counting_runner.py src/crosscamreid/server/hls_session.py src/crosscamreid/pipeline.py src/crosscamreid/websocket/reid_runner.py)",
+      "Bash(python -m py_compile src/crosscamreid/pose_loader.py src/crosscamreid/websocket/people_counting_runner.py src/crosscamreid/server/hls_session.py src/crosscamreid/pipeline.py src/crosscamreid/websocket/reid_runner.py)"
+    ]
+  }
+}

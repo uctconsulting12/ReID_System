@@ -11,6 +11,7 @@ from ultralytics import YOLO
 from ..capture import RTSPCapture
 from ..config import AppConfig
 from ..overlay import draw_overlay
+from ..pose_loader import load_pose_model
 from ..processor import process_master, process_slave
 from ..reid.factory import create_reid_backend
 from ..state import TIDStateManager
@@ -182,7 +183,7 @@ class HLSStreamSession:
         logger.info("[%s] loading YOLO pose model per camera (%d cameras)",
                     self.stream_id, len(cfg.cameras))
         pose_models: dict[str, YOLO] = {
-            cam.camera_id: YOLO(cfg.models.pose_path) for cam in cfg.cameras
+            cam.camera_id: load_pose_model(cfg.models.pose_path) for cam in cfg.cameras
         }
 
         reid_backend = create_reid_backend(
