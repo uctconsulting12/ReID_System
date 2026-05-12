@@ -237,6 +237,10 @@ def process_slave(
     store: SIDStore,
     states: TIDStateManager,
     config: AppConfig,
+    occluded: bool = False,  # accepted for call-site uniformity; slave never
+                             # writes to the gallery, so occlusion is a no-op
+                             # for SID safety. Kept here so the runner can
+                             # dispatch master/slave through one signature.
 ) -> dict:
     tid = int(tid)
     kp_ok = keypoint_gate(kp_conf, config.gating)

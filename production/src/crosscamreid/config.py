@@ -59,6 +59,12 @@ class QdrantConfig:
     cloud_api_key: str
     collection: str
     keep_db: bool
+    # If True, every fresh WebSocket session that acquires an org's
+    # OrgResources will reset (drop & recreate) that org's collection
+    # before any embeddings are written — but only when no sibling
+    # session is currently using the same org (to avoid trashing a
+    # concurrent run). Independent of `keep_db`.
+    reset_on_connect: bool = False
 
 
 @dataclass
@@ -275,6 +281,7 @@ def _parse_database(base_dir: Path, raw: dict[str, Any]) -> DatabaseConfig:
             cloud_api_key=cloud_api_key,
             collection=str(_require(qdrant_raw, "collection")),
             keep_db=bool(qdrant_raw.get("keep_db", False)),
+            reset_on_connect=bool(qdrant_raw.get("reset_on_connect", False)),
         ),
         postgres=PostgresConfig(
             enabled=bool(postgres_raw.get("enabled", True)),
@@ -329,4 +336,8 @@ def _parse_cameras(raw: dict[str, Any]) -> list[CameraConfig]:
             CameraConfig(camera_id="cam2", role="SLAVE", source=slave_src),
         ]
 
-    raise ValueError("Config must include 'cameras' or legacy 'sources'.")
+    # No cameras declared. Legal for runners that take cameras over the wire
+    # (people-counting WebSocket, HLS HTTP API). Runners that need a static
+    # camera list (the CLI in app.py) are responsible for surfacing a clear
+    # error at their own startup.
+    return []

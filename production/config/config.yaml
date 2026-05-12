@@ -1,10 +1,30 @@
-cameras:
-  - id: "cam1"
-    role: "MASTER"
-    source: "rtsp://admin:hikvision_ipcam@192.168.1.101:554/Streaming/Channels/101"
-  - id: "cam2"
-    role: "SLAVE"
-    source: "rtsp://admin:industry4@192.168.1.8:554/cam/realmonitor?channel=1&subtype=0"
+# ─── Dashboard feature flags ──────────────────────────────────────────────────
+# Consumed by production/dashboard_people_counting_mock.html. Mirror this value
+# in the same-named JS constant at the top of that file's <script> block.
+#
+# MASTERS_ENABLED:
+#   true  → per-camera Master/Slave checkbox in the dashboard, and the
+#           start_stream payload carries `role: "MASTER" | "SLAVE"` per camera.
+#   false → no role UI, no role field in the payload (legacy shape).
+MASTERS_ENABLED: false
+
+# ─── Cameras ──────────────────────────────────────────────────────────────────
+# This block is OPTIONAL.
+#   • people-counting WebSocket server (app_people_counting.py): cameras come
+#     from the dashboard's start_stream payload — leave the block commented out.
+#   • HLS HTTP server (app_hls.py): can receive cameras in the API request body;
+#     YAML cameras are only the fallback when the request omits them.
+#   • CLI desktop runner (app.py): REQUIRES this block — uncomment and fill in.
+#
+# Per-camera role is whatever the dashboard (or API) declares at runtime.
+#
+# cameras:
+#   - id: "cam1"
+#     role: "MASTER"
+#     source: "rtsp://user:pass@host:554/stream"
+#   - id: "cam2"
+#     role: "SLAVE"
+#     source: "rtsp://user:pass@host:554/stream"
 
 models:
   pose_path: "../../model_files/yolo11m-pose.pt"
@@ -17,7 +37,7 @@ models:
   fastreid_weights: "../../localtest/model_files/market_bot_R50-ibn.pth"
   fastreid_device: "cuda"
 
-capture:
+capture: 
   buffer_size: 1
   reconnect_initial_delay_sec: 2.0
   reconnect_max_delay_sec: 30.0
@@ -32,7 +52,7 @@ gating:
   max_embeddings_per_sid: 30
 
 enrollment:
-  qualify_frames: 30
+  qualify_frames: 30 
   enroll_frames: 5
   # true  -> assign existing SID immediately if any frame within the qualify
   #          window crosses gating.match_thresh (fast hand-off, but more risk
@@ -50,6 +70,11 @@ database:
     cloud_api_key: QDRANT_API_KEY                    # or set env QDRANT_API_KEY
     collection: "person_reid_torso"
     keep_db: false
+    # If true, each new WebSocket session for an org resets (drops &
+    # recreates) that org's collection before any embeddings are saved.
+    # Skipped automatically when another active session is already using
+    # the same org (logged as a warning). Independent of keep_db.
+    reset_on_connect: false
 
   postgres:
     enabled: true                            # set false to skip DB saving
@@ -68,7 +93,7 @@ runtime:
   # frozen so embeddings of overlapping people don't pollute a SID's gallery.
   occlusion_freeze_embeddings: true
   occlusion_iou_thresh: 0.35
-  reid_backend: "fastreid"   # onnxruntime | tensorrt | fastreid
+  reid_backend: "onnxruntime"   # onnxruntime | tensorrt | fastreid
   no_display: false
   display_width: 1600
   log_json: false

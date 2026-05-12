@@ -13,6 +13,20 @@ This folder ships **four** ways to run the same multi-camera ReID pipeline
 The three runners share the same code under `src/crosscamreid/` — switching
 between them does not change pipeline behavior.
 
+### Recent additions
+
+| Area | What changed |
+|---|---|
+| **Tracker** | `runtime.tracker_mode: bytetrack \| botsort` toggle. BoT-SORT brings Kalman motion prediction + camera-motion compensation (GMC) for stable IDs through path crossings and short occlusions. Tuned config at `config/botsort_consistent.yaml`. |
+| **Occlusion-aware ReID** | `runtime.occlusion_freeze_embeddings` + `occlusion_iou_thresh`. When two detections overlap heavily, gallery embedding writes for the occluded track are suppressed so mixed-identity crops don't pollute a SID. Match search still runs. |
+| **One-SID-per-frame** | Per-frame conflict resolver in the people-counting runner: if two tracks resolve to the same SID, only the one with the highest matching score keeps it; the loser reverts to UNKNOWN and is unlocked. |
+| **Cross-camera lifetime dwell** | `People_dwell_time` now reports total time the SID has been seen anywhere in the org (completed visits anywhere + all currently-visible visits). Stored as `dict[sid → seconds]` on `OrgResources`. |
+| **Per-org collection wipe** | `keep_db: false` now resets **only** the connecting org's collection (`person_reid_torso__org<id>`), not the entire local Qdrant directory. Other orgs are untouched. |
+| **`reset_on_connect`** | New `database.qdrant.reset_on_connect` flag — wipes the org's collection on **every** fresh WebSocket session (not just first attach per process). Skipped automatically when sibling sessions are active. |
+| **Speed knobs** | YOLO `imgsz=480, half=True` in the people-counting worker; `gpu_stats()` cached for 1 s instead of being polled per payload. |
+| **Multi-cam dashboard** | `dashboard_people_counting_mock.html` v3 — dynamic camera list (up to 5), per-cam video tiles with FPS + occupancy sparkline, dark/light theme, auto-reconnect, persisted form state, latency pill, search/export/copy helpers. |
+| **Annotated frame cadence** | Setting `include_annotated_frame: true` now embeds the frame in **every** payload (the `frame_send_interval` gate was removed). Still accepted in the request for backward compat; no longer applied. |
+
 ---
 
 ## Prerequisites
@@ -43,8 +57,14 @@ Key sections:
 - `models.pose_path` / `models.reid_*` — model weights (paths are resolved
   relative to the YAML file).
 - `gating` / `enrollment` — ReID thresholds and enrollment voting parameters.
-- `database.qdrant` — local or cloud vector store (`keep_db: true` preserves
-  the SID gallery between runs).
+- `database.qdrant` — local or cloud vector store. Two reset knobs:
+  - `keep_db` — when `false`, wipes **only the connecting org's** collection
+    on its first attach in this process (other orgs untouched). When `true`,
+    galleries persist across runs.
+  - `reset_on_connect` — when `true`, every new WebSocket session resets
+    the org's collection before any embeddings are saved. Skipped (with a
+    `WARNING` log) when sibling sessions for the same org are still active.
+    Default `false`.
 - `runtime.reid_backend` — `onnxruntime`, `tensorrt`, or `fastreid`.
 - `runtime.roi_based_master` — interactive ROI selection on the master frame.
   **Disabled automatically when running under `app_hls.py`** because there is
@@ -52,6 +72,22 @@ Key sections:
 - `runtime.sid_persist_on_kp_loss` — when a tracker ID is already locked to an
   SID, keep returning that SID across transient keypoint dropouts (occlusion).
   Default `false`; enabled only in `localtest/config/local_video.yaml`.
+- `runtime.tracker_mode` — `bytetrack` (default, current behaviour, uses
+  `runtime.tracker`) or `botsort` (Kalman + motion prediction + camera-motion
+  compensation, uses `runtime.botsort_tracker`). BoT-SORT is the recommended
+  upgrade when you see ID switches at path crossings or after short occlusions.
+- `runtime.botsort_tracker` — path to the BoT-SORT YAML used when
+  `tracker_mode=botsort`. Ships with `config/botsort_consistent.yaml`
+  (`track_buffer: 90`, `match_thresh: 0.85`, `gmc_method: sparseOptFlow`,
+  `with_reid: false` because we run our own ReID downstream via `SIDStore`).
+- `runtime.occlusion_freeze_embeddings` — when `true` (default), suppress
+  gallery embedding writes for any track whose bbox overlaps another live
+  track at IoU ≥ `runtime.occlusion_iou_thresh` (default `0.35`). Match
+  lookup against the existing gallery still runs; only enrollment / new-SID
+  creation are paused until the occlusion clears.
+- `runtime.tid_recover_max_missing_frames` / `tid_recover_iou_threshold` —
+  internal `TIDStateManager` heals tracker breaks via IoU within this window.
+  Bump the frame count to widen occlusion recovery.
 
 ---
 
@@ -420,9 +456,23 @@ Notes on the schema:
   occupancy reaches the threshold, and `"Error"` on error frames.
 - `is_alert_triggered` is **edge-triggered** — `true` only on the rising
   edge into a new alert level.
-- `annotated_frame` is the raw base64 JPEG (no `data:` prefix). It is
-  populated on **every Nth processed frame** (default `N = 20`) and `null`
-  in between, to keep bandwidth bounded.
+- `annotated_frame` is the raw base64 JPEG (no `data:` prefix). When
+  `include_annotated_frame: true` (default), the frame is embedded in
+  **every** payload. The `frame_send_interval` field is still accepted on
+  the wire for backward compatibility but is no longer applied — set
+  `include_annotated_frame: false` to disable frame upload entirely.
+- `People_dwell_time[i]` is the **cross-camera lifetime dwell** for
+  `People_ids[i]`: completed visits anywhere in the org **plus** every
+  in-progress visit on every camera that currently sees the SID. So a
+  person who walked across cam1 for 30 s, exited, then re-appeared and is
+  10 s into a visit on cam2 reads `00:00:40`. Re-entries accumulate
+  instead of resetting.
+- **SID conflict resolution**: per frame, if two tracks resolve to the
+  same SID, only the higher-scoring one keeps it (current
+  `similarity_score`, falling back to the score recorded at lock time on
+  `TIDState.lock_score`). The loser is reverted to UNKNOWN and unlocked
+  so the next frame can re-attempt assignment. The arrays you receive
+  never contain duplicate SIDs in the same frame.
 
 Frame controls (all optional on `start_stream`):
 
@@ -435,9 +485,12 @@ Frame controls (all optional on `start_stream`):
 ```
 
 - `include_annotated_frame` — set `false` to disable frame upload entirely.
+  When `true`, the JPEG is embedded in **every** payload (no Nth-frame
+  throttle).
 - `frame_jpeg_quality` — clamped 30–95.
-- `frame_send_interval` — N. The server emits `annotated_frame` only when
-  `Frame_Count % N == 0`; otherwise the field is `null`.
+- `frame_send_interval` — accepted but **no longer applied**. Kept on the
+  wire so existing clients keep working; the toggle is now binary via
+  `include_annotated_frame`.
 
 ### Counting / occupancy semantics
 
@@ -453,14 +506,15 @@ Frame controls (all optional on `start_stream`):
   (`approaching_threshold` → `at_threshold` → `over_capacity`) and only re-
   fires after dropping below that level and crossing it again.
 - **Average dwell**: mean dwell of currently visible people; if nobody is
-  visible, falls back to the mean dwell of the **last 10 exits**.
+  visible, falls back to the mean dwell of the **last 10 exits**. (The
+  parallel `People_dwell_time` array is per-SID lifetime — see schema notes
+  above.)
 - **Annotated frame**: the worker draws bounding boxes + ID labels onto
   the frame and emits it as `annotated_frame` (base64 JPEG, no `data:`
-  prefix) every `frame_send_interval` processed frames. Disable
-  per-request with `"include_annotated_frame": false`, tune compression
-  with `"frame_jpeg_quality": <30-95>`, or change the cadence with
-  `"frame_send_interval": <int>` (default 20). The field is `null` on
-  intervening frames.
+  prefix) on **every** payload when `include_annotated_frame: true`.
+  Disable per-request with `"include_annotated_frame": false`; tune
+  compression with `"frame_jpeg_quality": <30-95>`. (`frame_send_interval`
+  is still accepted but no longer applied.)
 
 ### Performance controls
 
@@ -479,6 +533,24 @@ Frame controls (all optional on `start_stream`):
 - The shared `OrgRegistry` ref-counts org resources but does **not**
   dispose them when the last session disconnects (a brief reconnect must
   not wipe the SID gallery).
+- `keep_db: false` resets only the **connecting org's** collection on its
+  first attach in this process. Other orgs' collections in the same local
+  Qdrant directory are untouched.
+- `reset_on_connect: true` resets the org's collection on **every** fresh
+  WebSocket session. The reset is skipped (with a `WARNING` log) when at
+  least one sibling session is still using the same org, so concurrent
+  runs don't trash each other's gallery.
+
+### Cross-camera lifetime dwell
+
+- `OrgResources.dwell_lifetime_sec: dict[sid → seconds]` — accumulated
+  dwell across all *completed* visits per SID, anywhere in the org.
+- Each `EntryExitTracker` writes to the shared dict on every exit (under
+  `OrgResources.dwell_lock`).
+- `People_dwell_time[i]` for visible SID `G7` is computed as
+  `dwell_lifetime_sec[G7] + (now - entry_time on every camera currently
+  showing G7)`. The reporting camera doesn't double-count its own
+  in-progress visit.
 
 ### Endpoints
 
@@ -556,6 +628,16 @@ The same source field accepts a webcam index as a string (e.g. `"0"`).
 - **Cross-camera SIDs don't match between sessions** — expected. Each
   session is independent unless `database.qdrant.keep_db: true` is set in
   the YAML; with `keep_db: true`, sessions share the persisted gallery.
+- **`ValueError: shapes (N, X) and (Y,) not aligned`** when starting a
+  stream — your Qdrant collection contains embeddings of dim `X` from a
+  prior run with a different ReID backend, but the active backend produces
+  dim `Y`. (Common trigger: using a vanilla classifier ONNX like
+  `resnet50-v2-7.onnx` whose final layer is 1000-class logits, *not* a
+  feature extractor.) Fix: delete `production/production_embedding_DB/`,
+  or set `database.qdrant.reset_on_connect: true` (or `keep_db: false`)
+  and reconnect — the org's collection will be dropped and recreated at
+  the new dim. The dim-suffixed sibling logic in `SIDStore` handles this
+  automatically when the metadata reports the right dim.
 - **`runtime.roi_based_master` warning in logs** — ROI selection requires a
   GUI window. Server mode disables it automatically; the warning is just FYI.
 - **High GPU memory** — every session loads its own YOLO instance per camera.
@@ -570,10 +652,14 @@ production/
 ├── app.py                                  # CLI runner (cv2 window)
 ├── app_server.py                           # ReID WebSocket server
 ├── app_hls.py                              # HLS HTTP server
-├── app_people_counting.py                  # People-counting WS server  ◄── new
+├── app_people_counting.py                  # People-counting WS server
+├── dashboard_people_counting_mock.html     # Multi-cam mock dashboard (v3)
+├── dashboard_ws.html                       # Original ReID dashboard
 ├── README.md                               # this file
 ├── config/
-│   └── config.yaml
+│   ├── config.yaml
+│   ├── bytetrack_consistent.yaml
+│   └── botsort_consistent.yaml             # used when tracker_mode=botsort
 ├── hls_out/                                # created at runtime by app_hls.py
 └── src/crosscamreid/
     ├── capture.py                          # RTSPCapture (thread per camera)

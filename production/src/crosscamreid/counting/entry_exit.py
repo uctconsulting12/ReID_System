@@ -55,6 +55,10 @@ class EntryExitTracker:
             shared_dwell if shared_dwell is not None else {}
         )
         self._dwell_lock = shared_dwell_lock
+        # Per-camera-only accumulator: completed dwell on *this* camera for
+        # every SID that has visited it. Never shared org-wide, so it gives
+        # a true "avg across everyone who has visited this cam" number.
+        self._cam_lifetime_dwell_sec: dict[str, float] = {}
         # Optional callable returning a list of (cam_id, _TrackInfo)-like
         # entries for this SID currently active on *other* cameras of the
         # same org. Used to add their in-progress visit time so the dwell
@@ -110,6 +114,9 @@ class EntryExitTracker:
                     self._lifetime_dwell_sec[sid] = (
                         self._lifetime_dwell_sec.get(sid, 0.0) + dwell
                     )
+                self._cam_lifetime_dwell_sec[sid] = (
+                    self._cam_lifetime_dwell_sec.get(sid, 0.0) + dwell
+                )
                 events.append(ExitEvent(sid=sid, exit_time=info.last_seen))
                 self.total_exits += 1
                 self._recent_exits.append((sid, dwell, info.last_seen))
@@ -133,6 +140,16 @@ class EntryExitTracker:
 
     def recent_exits(self, n: int = 10) -> list[tuple[str, float, float]]:
         return self._recent_exits[-n:]
+
+    def cam_visitor_dwell_sec(self, now: float | None = None) -> list[float]:
+        """Per-SID total dwell on *this camera*, one value per unique SID that
+        has visited this camera (completed visits + any in-progress visit).
+        Used to compute the camera-local average across every visitor."""
+        now = time.time() if now is None else now
+        totals = dict(self._cam_lifetime_dwell_sec)
+        for sid, info in self._active.items():
+            totals[sid] = totals.get(sid, 0.0) + max(0.0, now - info.entry_time)
+        return list(totals.values())
 
     def lifetime_dwell_sec(self, sid: str, now: float | None = None) -> float:
         """Total dwell accumulated for `sid` across all visits, including any

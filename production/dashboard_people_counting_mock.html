@@ -1,32 +1,65 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
 
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>People Counting Dashboard Mock v2 (multi-cam)</title>
+  <title>People Counting Dashboard v3 — multi-cam</title>
   <style>
     :root {
-      --bg: #f3f6fb;
+      --bg-grad-1: #e8f0fb;
+      --bg-grad-2: #f8fbff;
+      --bg-grad-3: #eef7f2;
       --panel: #ffffff;
+      --panel-soft: #f7faff;
       --text: #152238;
       --muted: #5f6f85;
       --line: #d9e2ee;
       --brand: #0f6cbd;
+      --brand-soft: #e6f0fb;
       --ok: #198754;
       --warn: #b7791f;
       --bad: #c53030;
+      --shadow: 0 4px 12px rgba(10, 40, 80, 0.05);
+      --tile-bg: #fff;
+      --video-bg: #0a0f17;
+      --input-bg: #fff;
+      --row-hover: #f4f7fc;
+      --pill-bg: #eef3f9;
     }
 
-    * {
-      box-sizing: border-box;
+    [data-theme="dark"] {
+      --bg-grad-1: #0d1320;
+      --bg-grad-2: #11192a;
+      --bg-grad-3: #0f1c1a;
+      --panel: #161e2f;
+      --panel-soft: #1a2238;
+      --text: #e6ecf6;
+      --muted: #98a4ba;
+      --line: #2a334a;
+      --brand: #5aa9ee;
+      --brand-soft: #1d2c47;
+      --ok: #4cc38a;
+      --warn: #f0b454;
+      --bad: #f06b6b;
+      --shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+      --tile-bg: #161e2f;
+      --video-bg: #05080f;
+      --input-bg: #1a2238;
+      --row-hover: #1d273e;
+      --pill-bg: #1f2b44;
     }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
 
     body {
       margin: 0;
-      font-family: "Trebuchet MS", "Segoe UI", sans-serif;
-      background: linear-gradient(135deg, #e8f0fb 0%, #f8fbff 45%, #eef7f2 100%);
+      font-family: "Inter", "Segoe UI", "Trebuchet MS", system-ui, sans-serif;
+      background: linear-gradient(135deg, var(--bg-grad-1) 0%, var(--bg-grad-2) 45%, var(--bg-grad-3) 100%);
       color: var(--text);
+      transition: background 0.25s ease, color 0.25s ease;
     }
 
     .wrap {
@@ -35,51 +68,92 @@
       padding: 18px;
     }
 
-    h1 {
-      margin: 0 0 4px 0;
-      font-size: 1.8rem;
+    /* ── header bar ───────────────────────────────────────────── */
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 16px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
     }
 
-    .sub {
-      margin: 0 0 12px 0;
-      color: var(--muted);
-      font-size: 0.95rem;
+    .topbar h1 { margin: 0; font-size: 1.7rem; letter-spacing: -0.01em; }
+    .topbar .sub { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+    .topbar code { background: var(--pill-bg); padding: 1px 6px; border-radius: 4px; font-size: 0.85em; }
+
+    .topbar-tools {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      flex-wrap: wrap;
     }
 
+    .topbar-tools .pill {
+      background: var(--pill-bg);
+      border: 1px solid var(--line);
+    }
+
+    .icon-btn {
+      width: auto;
+      padding: 6px 12px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.84rem;
+    }
+    .icon-btn:hover { background: var(--panel-soft); }
+
+    /* ── core layout ──────────────────────────────────────────── */
     .panel {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 12px;
       padding: 12px;
       margin-bottom: 12px;
-      box-shadow: 0 4px 12px rgba(10, 40, 80, 0.05);
+      box-shadow: var(--shadow);
     }
+
+    .panel-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .panel-title h3 { margin: 0; font-size: 0.95rem; letter-spacing: 0.01em; }
+
+    details.panel summary {
+      cursor: pointer;
+      list-style: none;
+      font-weight: 600;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    details.panel summary::-webkit-details-marker { display: none; }
+    details.panel summary::before {
+      content: "▸";
+      color: var(--muted);
+      transition: transform 0.15s ease;
+      display: inline-block;
+    }
+    details.panel[open] summary::before { transform: rotate(90deg); }
+    details.panel[open] summary { margin-bottom: 10px; }
 
     .grid {
       display: grid;
       grid-template-columns: repeat(12, 1fr);
       gap: 8px;
     }
-
-    .c2 {
-      grid-column: span 2;
-    }
-
-    .c3 {
-      grid-column: span 3;
-    }
-
-    .c4 {
-      grid-column: span 4;
-    }
-
-    .c6 {
-      grid-column: span 6;
-    }
-
-    .c12 {
-      grid-column: span 12;
-    }
+    .c2 { grid-column: span 2; }
+    .c3 { grid-column: span 3; }
+    .c4 { grid-column: span 4; }
+    .c6 { grid-column: span 6; }
+    .c12 { grid-column: span 12; }
 
     label {
       font-size: 0.82rem;
@@ -88,22 +162,26 @@
       margin-bottom: 4px;
     }
 
-    input,
-    textarea,
-    button,
-    select {
+    input, textarea, button, select {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 9px;
       padding: 9px 10px;
       font-size: 0.92rem;
       color: var(--text);
-      background: #fff;
+      background: var(--input-bg);
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      border-color: var(--brand);
+      box-shadow: 0 0 0 3px var(--brand-soft);
     }
 
     textarea {
       min-height: 124px;
-      font-family: Consolas, monospace;
+      font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 0.84rem;
     }
 
     .actions {
@@ -112,72 +190,65 @@
       flex-wrap: wrap;
       align-items: center;
     }
+    .actions button { width: auto; cursor: pointer; font-weight: 600; }
+    .actions button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .actions button {
-      width: auto;
-      cursor: pointer;
-      font-weight: 600;
-    }
-
-    .primary {
-      background: var(--brand);
-      color: #fff;
-      border-color: #0c5da5;
-    }
-
-    .danger {
-      background: #d9534f;
-      color: #fff;
-      border-color: #b74542;
-    }
-
-    .muted {
-      background: #eef3f9;
-    }
+    .primary { background: var(--brand); color: #fff; border-color: transparent; }
+    .primary:hover:not(:disabled) { filter: brightness(1.08); }
+    .danger { background: #d9534f; color: #fff; border-color: transparent; }
+    .danger:hover:not(:disabled) { filter: brightness(1.08); }
+    .ghost { background: var(--pill-bg); }
+    .ghost:hover:not(:disabled) { background: var(--brand-soft); }
 
     .status {
       border: 1px solid var(--line);
-      border-radius: 8px;
-      padding: 7px 10px;
-      font-size: 0.86rem;
-      background: #fff;
+      border-radius: 999px;
+      padding: 5px 12px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      background: var(--panel);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
     }
-
-    .ok {
-      color: var(--ok);
+    .status::before {
+      content: "";
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--muted);
     }
+    .status.ok { color: var(--ok); }
+    .status.ok::before { background: var(--ok); box-shadow: 0 0 6px var(--ok); }
+    .status.warn { color: var(--warn); }
+    .status.warn::before { background: var(--warn); }
+    .status.bad { color: var(--bad); }
+    .status.bad::before { background: var(--bad); }
 
-    .warn {
-      color: var(--warn);
-    }
-
-    .bad {
-      color: var(--bad);
-    }
-
+    /* ── KPI cards ────────────────────────────────────────────── */
     .cards {
       display: grid;
-      grid-template-columns: repeat(6, 1fr);
+      grid-template-columns: repeat(7, 1fr);
       gap: 8px;
     }
-
     .card {
       border: 1px solid var(--line);
-      border-radius: 10px;
-      padding: 10px;
-      background: #fff;
+      border-radius: 12px;
+      padding: 12px;
+      background: var(--tile-bg);
+      position: relative;
+      overflow: hidden;
     }
-
-    .k {
-      font-size: 0.8rem;
-      color: var(--muted);
+    .card::before {
+      content: "";
+      position: absolute; left: 0; top: 0; bottom: 0;
+      width: 3px; background: var(--brand);
+      opacity: 0.55;
     }
-
-    .v {
-      font-size: 1.3rem;
-      font-weight: 700;
-      margin-top: 3px;
-    }
+    .card.alert::before { background: var(--bad); opacity: 0.9; }
+    .k { font-size: 0.78rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .v { font-size: 1.5rem; font-weight: 700; margin-top: 4px; font-variant-numeric: tabular-nums; }
+    .v.delta { font-size: 0.8rem; color: var(--muted); font-weight: 500; margin-top: 2px; }
 
     .split {
       display: grid;
@@ -185,67 +256,121 @@
       gap: 10px;
     }
 
+    /* ── tables / log ─────────────────────────────────────────── */
     .tbl {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.88rem;
     }
-
-    .tbl th,
-    .tbl td {
+    .tbl th, .tbl td {
       border-bottom: 1px solid var(--line);
       padding: 7px 8px;
       text-align: left;
+      font-variant-numeric: tabular-nums;
     }
-
     .tbl th {
-      background: #f7faff;
-      position: sticky;
-      top: 0;
+      background: var(--panel-soft);
+      position: sticky; top: 0;
+      font-weight: 600;
+      font-size: 0.78rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .tbl tbody tr:hover { background: var(--row-hover); }
+    .tbl .gid {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-weight: 700;
+      font-size: 0.78rem;
     }
 
     .scroll {
-      max-height: 360px;
+      max-height: 380px;
       overflow: auto;
       border: 1px solid var(--line);
       border-radius: 8px;
     }
 
     .log {
-      max-height: 360px;
+      max-height: 380px;
       overflow: auto;
       border: 1px solid var(--line);
       border-radius: 8px;
-      background: #fdfefe;
-      padding: 7px;
-      font-family: Consolas, monospace;
-      font-size: 0.82rem;
-      line-height: 1.35;
+      background: var(--panel-soft);
+      padding: 8px;
+      font-family: "JetBrains Mono", Consolas, monospace;
+      font-size: 0.8rem;
+      line-height: 1.45;
     }
+    .log .line { white-space: pre-wrap; word-break: break-word; }
+    .log .err { color: var(--bad); }
+    .log .ok { color: var(--ok); }
+    .log .warn { color: var(--warn); }
 
-    /* ── camera input rows ─────────────────────────────────────── */
+    /* ── camera input rows ───────────────────────────────────── */
     .cam-row {
       display: grid;
       grid-template-columns: 110px 1fr 90px;
       gap: 8px;
       align-items: end;
       margin-bottom: 6px;
+      padding: 4px 6px;
+      border-radius: 8px;
+      border-left: 3px solid transparent;
+      transition: border-color 0.15s, background 0.15s;
     }
-
+    .cam-row.with-role { grid-template-columns: 110px 1fr 130px 90px; }
+    .cam-row.is-master {
+      border-left-color: var(--brand);
+      background: var(--brand-soft);
+    }
     .cam-row .lbl {
       font-size: 0.78rem;
       color: var(--muted);
     }
-
     .cam-row button.remove {
-      background: #fbecec;
-      border-color: #e3b9b9;
-      color: #b03030;
+      background: rgba(217, 83, 79, 0.12);
+      border-color: rgba(217, 83, 79, 0.4);
+      color: var(--bad);
       font-weight: 700;
       cursor: pointer;
     }
+    .role-toggle {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: var(--input-bg);
+      cursor: pointer;
+      font-size: 0.86rem;
+      user-select: none;
+      width: 100%;
+    }
+    .role-toggle input { width: auto; margin: 0; cursor: pointer; }
+    .role-toggle .role-label { color: var(--muted); font-weight: 600; }
+    .role-toggle input:checked + .role-label { color: var(--brand); }
+    .role-summary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
+      border-radius: 999px;
+      background: var(--pill-bg);
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      margin-left: 8px;
+    }
+    .role-summary b { color: var(--brand); font-variant-numeric: tabular-nums; }
 
-    /* ── per-camera tiles ──────────────────────────────────────── */
+    /* ── per-camera tiles ────────────────────────────────────── */
     .tiles {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
@@ -254,43 +379,50 @@
 
     .tile {
       border: 1px solid var(--line);
-      border-radius: 12px;
-      background: #fff;
+      border-radius: 14px;
+      background: var(--tile-bg);
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      box-shadow: var(--shadow);
+      transition: box-shadow 0.2s, transform 0.15s;
+    }
+    .tile.alerting {
+      animation: pulse-alert 1.2s ease-in-out infinite;
+    }
+    @keyframes pulse-alert {
+      0%, 100% { box-shadow: var(--shadow); }
+      50% { box-shadow: 0 0 0 3px rgba(220, 50, 50, 0.45), var(--shadow); }
     }
 
     .tile-head {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 10px;
-      background: #f7faff;
+      padding: 10px 12px;
+      background: var(--panel-soft);
       border-bottom: 1px solid var(--line);
+      gap: 8px;
     }
-
-    .tile-head .title {
-      font-weight: 700;
-    }
-
+    .tile-head .title { font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .tile-head .actions-row { display: flex; gap: 6px; }
     .tile-head button {
       width: auto;
       padding: 4px 10px;
-      font-size: 0.82rem;
+      font-size: 0.78rem;
       cursor: pointer;
+      background: var(--panel);
     }
 
     .video-wrap {
       position: relative;
       width: 100%;
-      background: #0a0f17;
+      background: var(--video-bg);
       min-height: 240px;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-
     .video-wrap img {
       display: block;
       width: 100%;
@@ -298,24 +430,46 @@
       max-height: 60vh;
       object-fit: contain;
     }
-
     .video-wrap .placeholder {
       color: #94a3b8;
       font-size: 0.88rem;
       padding: 18px;
       text-align: center;
     }
-
     .video-meta {
       position: absolute;
-      left: 8px;
-      bottom: 8px;
+      left: 8px; bottom: 8px;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-family: "JetBrains Mono", Consolas, monospace;
+      pointer-events: none;
+      backdrop-filter: blur(4px);
+    }
+    .video-fps {
+      position: absolute;
+      right: 8px; top: 8px;
       background: rgba(0, 0, 0, 0.55);
       color: #fff;
-      padding: 4px 8px;
+      padding: 3px 8px;
       border-radius: 6px;
-      font-size: 0.78rem;
-      font-family: Consolas, monospace;
+      font-size: 0.72rem;
+      font-family: "JetBrains Mono", Consolas, monospace;
+      pointer-events: none;
+    }
+    .video-paused {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      font-size: 0.85rem;
       pointer-events: none;
     }
 
@@ -323,80 +477,139 @@
       display: grid;
       grid-template-columns: repeat(6, 1fr);
       gap: 4px;
-      padding: 6px 8px;
+      padding: 8px 10px;
       font-size: 0.78rem;
     }
-
     .tile-stats div {
-      background: #f7faff;
+      background: var(--panel-soft);
       border: 1px solid var(--line);
-      border-radius: 6px;
-      padding: 4px 6px;
+      border-radius: 8px;
+      padding: 6px 6px;
       text-align: center;
     }
-
     .tile-stats b {
       display: block;
-      font-size: 0.95rem;
+      font-size: 1rem;
       color: var(--text);
+      font-variant-numeric: tabular-nums;
     }
-
     .tile-stats span {
       color: var(--muted);
-      font-size: 0.72rem;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .spark-wrap {
+      padding: 0 10px 10px;
+    }
+    .spark-wrap .spark-label {
+      font-size: 0.7rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    svg.spark {
+      width: 100%;
+      height: 36px;
+      display: block;
     }
 
     .pill {
-      display: inline-block;
-      padding: 2px 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 10px;
       border-radius: 999px;
       font-size: 0.74rem;
       font-weight: 700;
-      background: #eef3f9;
+      background: var(--pill-bg);
       color: var(--muted);
+      letter-spacing: 0.02em;
     }
-
-    .pill.live {
-      background: #def7ec;
-      color: #03543f;
+    .pill.live { background: rgba(25, 135, 84, 0.15); color: var(--ok); }
+    .pill.live::before {
+      content: ""; width: 6px; height: 6px; background: var(--ok);
+      border-radius: 50%; box-shadow: 0 0 6px var(--ok);
     }
-
     .pill.alert {
-      background: #fde2e2;
-      color: #9b1c1c;
+      background: rgba(197, 48, 48, 0.18);
+      color: var(--bad);
+      animation: pulse-pill 0.9s ease-in-out infinite;
+    }
+    @keyframes pulse-pill {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.55; }
     }
 
+    /* ── toasts ────────────────────────────────────────────────── */
+    .toasts {
+      position: fixed;
+      right: 16px; bottom: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+      max-width: 320px;
+    }
+    .toast {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-left: 4px solid var(--brand);
+      border-radius: 8px;
+      padding: 10px 12px;
+      box-shadow: var(--shadow);
+      font-size: 0.86rem;
+      animation: slide-in 0.18s ease-out;
+    }
+    .toast.ok { border-left-color: var(--ok); }
+    .toast.err { border-left-color: var(--bad); }
+    .toast.warn { border-left-color: var(--warn); }
+    @keyframes slide-in {
+      from { transform: translateX(20px); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* ── search bar ────────────────────────────────────────────── */
+    .search {
+      width: 100%;
+      max-width: 280px;
+      padding: 6px 10px;
+      font-size: 0.85rem;
+    }
+
+    /* ── responsive ────────────────────────────────────────────── */
+    @media (max-width: 1100px) {
+      .cards { grid-template-columns: repeat(4, 1fr); }
+    }
     @media (max-width: 960px) {
-
-      .c2,
-      .c3,
-      .c4,
-      .c6 {
-        grid-column: span 12;
-      }
-
-      .cards {
-        grid-template-columns: repeat(2, 1fr);
-      }
-
-      .split {
-        grid-template-columns: 1fr;
-      }
-
-      .tiles {
-        grid-template-columns: 1fr;
-      }
+      .c2, .c3, .c4, .c6 { grid-column: span 12; }
+      .cards { grid-template-columns: repeat(2, 1fr); }
+      .split { grid-template-columns: 1fr; }
+      .tiles { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 
 <body>
   <div class="wrap">
-    <h1>People Counting Mock Dashboard v2 — multi-camera</h1>
-    <p class="sub">Send up to 5 cameras in a single <code>start_stream</code>. ReID identities are shared across
-      cameras within the same <code>org_id</code>, so global IDs (e.g. <code>G7</code>) match across tiles.</p>
+    <div class="topbar">
+      <div>
+        <h1>People Counting Dashboard <span style="color:var(--muted);font-weight:500;font-size:0.7em;">v3</span></h1>
+        <p class="sub">Up to 5 cameras per session. ReID identities are shared within an <code>org_id</code>, so
+          <code>G7</code> on one camera matches <code>G7</code> on the others.</p>
+      </div>
+      <div class="topbar-tools">
+        <span id="status" class="status warn">Disconnected</span>
+        <span id="latency" class="pill" title="Server payload age">lat —</span>
+        <span id="msgrate" class="pill" title="Total messages received">msgs 0</span>
+        <button id="btn_theme" class="icon-btn" title="Toggle theme">🌗</button>
+      </div>
+    </div>
 
-    <div class="panel">
+    <details class="panel" open>
+      <summary>Connection &amp; stream parameters</summary>
       <div class="grid">
         <div class="c3"><label>Host</label><input id="host" value="localhost:8002"></div>
         <div class="c2"><label>Client ID</label><input id="client_id" value="client-v2"></div>
@@ -405,10 +618,10 @@
         <div class="c2"><label>User ID</label><input id="user_id" type="number" value="42"></div>
 
         <div class="c2"><label>Threshold</label><input id="threshold" type="number" value="50"></div>
-        <div class="c2"><label>Alert Rate</label><input id="alert_rate" type="number" value="80"></div>
+        <div class="c2"><label>Alert Rate (%)</label><input id="alert_rate" type="number" value="80"></div>
         <div class="c2"><label>FPS</label><input id="fps" type="number" value="20"></div>
         <div class="c2"><label>Frame Skip</label><input id="frame_skip" type="number" value="0"></div>
-        <div class="c2"><label>Exit Timeout</label><input id="exit_timeout_sec" type="number" step="0.1" value="2.0">
+        <div class="c2"><label>Exit Timeout (s)</label><input id="exit_timeout_sec" type="number" step="0.1" value="2.0">
         </div>
         <div class="c2">
           <label>Send Frames</label>
@@ -422,81 +635,85 @@
             value="70"></div>
         <div class="c2"><label>Frame Every Nth</label><input id="frame_send_interval" type="number" min="1" value="20">
         </div>
+        <div class="c2">
+          <label>Auto-reconnect</label>
+          <select id="auto_reconnect">
+            <option value="true" selected>true</option>
+            <option value="false">false</option>
+          </select>
+        </div>
       </div>
-    </div>
+    </details>
 
     <div class="panel">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-        <h3 style="margin:0;">Cameras (max 5)</h3>
-        <button id="btn_add_camera" class="muted" style="width:auto;padding:6px 14px;cursor:pointer;font-weight:600;">+
-          Add Camera</button>
+      <div class="panel-title">
+        <h3>Cameras (max 5)
+          <span id="role_summary" class="role-summary" hidden><b>0</b> master · <b>0</b> slave</span>
+        </h3>
+        <button id="btn_add_camera" class="icon-btn">+ Add Camera</button>
       </div>
       <div id="cameras_list"></div>
     </div>
 
-    <div class="panel">
+    <details class="panel">
+      <summary>Payload preview</summary>
       <div class="grid">
-        <div class="c12"><label>Payload Preview</label><textarea id="preview" readonly></textarea></div>
+        <div class="c12"><textarea id="preview" readonly></textarea></div>
         <div class="c12">
           <div class="actions">
-            <button id="btn_connect" class="primary">Connect</button>
-            <button id="btn_start" class="primary">Start Stream</button>
-            <button id="btn_stop_all" class="danger">Stop All</button>
-            <button id="btn_close" class="muted">Disconnect</button>
-            <span id="status" class="status warn">Disconnected</span>
+            <button id="btn_copy_payload" class="ghost">Copy payload</button>
           </div>
         </div>
+      </div>
+    </details>
+
+    <div class="panel">
+      <div class="actions">
+        <button id="btn_connect" class="primary">Connect</button>
+        <button id="btn_start" class="primary">Start Stream</button>
+        <button id="btn_stop_all" class="danger">Stop All</button>
+        <button id="btn_close" class="ghost">Disconnect</button>
+        <button id="btn_export_logs" class="ghost" style="margin-left:auto;">Export Logs</button>
       </div>
     </div>
 
     <div class="panel">
       <div class="cards">
-        <div class="card">
-          <div class="k">Visible (sum)</div>
-          <div class="v" id="m_visible">0</div>
-        </div>
-        <div class="card">
-          <div class="k">Occupancy (sum)</div>
-          <div class="v" id="m_occupancy">0</div>
-        </div>
-        <div class="card">
-          <div class="k">Entries (sum)</div>
-          <div class="v" id="m_entries">0</div>
-        </div>
-        <div class="card">
-          <div class="k">Exits (sum)</div>
-          <div class="v" id="m_exits">0</div>
-        </div>
-        <div class="card">
-          <div class="k">Net (sum)</div>
-          <div class="v" id="m_net">0</div>
-        </div>
-        <div class="card">
-          <div class="k">Active Cameras</div>
-          <div class="v" id="m_cams">0</div>
-        </div>
+        <div class="card"><div class="k">Visible</div><div class="v" id="m_visible">0</div></div>
+        <div class="card"><div class="k">Occupancy</div><div class="v" id="m_occupancy">0</div></div>
+        <div class="card"><div class="k">Entries</div><div class="v" id="m_entries">0</div></div>
+        <div class="card"><div class="k">Exits</div><div class="v" id="m_exits">0</div></div>
+        <div class="card"><div class="k">Net</div><div class="v" id="m_net">0</div></div>
+        <div class="card"><div class="k">Active Cameras</div><div class="v" id="m_cams">0</div></div>
+        <div class="card" id="m_alert_card"><div class="k">Alerts</div><div class="v" id="m_alerts">0</div></div>
       </div>
-      <div style="margin-top:8px;color:var(--muted);font-size:0.84rem;" id="meta">Waiting for data...</div>
+      <div style="margin-top:8px;color:var(--muted);font-size:0.84rem;" id="meta">Waiting for data…</div>
     </div>
 
     <div class="panel">
-      <h3 style="margin:0 0 8px 0;">Annotated Video — per camera</h3>
+      <div class="panel-title">
+        <h3>Annotated video — per camera</h3>
+      </div>
       <div class="tiles" id="tiles">
-        <div class="placeholder" style="color:#94a3b8;padding:18px;">No streams running. Add cameras above and click
-          Start Stream.</div>
+        <div class="placeholder" style="color:var(--muted);padding:18px;text-align:center;">
+          No streams running. Add cameras above and click <b>Start Stream</b>.
+        </div>
       </div>
     </div>
 
     <div class="split">
       <div class="panel">
-        <h3 style="margin:0 0 8px 0;">People List (across cameras)</h3>
+        <div class="panel-title">
+          <h3>People (across cameras)</h3>
+          <input id="people_search" class="search" placeholder="Filter SID, cam, dwell…">
+        </div>
         <div class="scroll">
           <table class="tbl">
             <thead>
               <tr>
                 <th>Cam</th>
                 <th>Global ID</th>
-                <th>Dwell</th>
+                <th>Dwell (lifetime)</th>
                 <th>Confidence</th>
                 <th>Entry</th>
               </tr>
@@ -506,29 +723,48 @@
         </div>
       </div>
       <div class="panel">
-        <h3 style="margin:0 0 8px 0;">Logs</h3>
+        <div class="panel-title">
+          <h3>Logs</h3>
+          <span style="font-size:0.78rem;color:var(--muted);" id="log_count">0 entries</span>
+        </div>
         <div class="log" id="logs"></div>
       </div>
     </div>
   </div>
 
+  <div class="toasts" id="toasts"></div>
+
   <script>
+    "use strict";
+
+    /* ─────────────────────── constants ─────────────────────── */
     const MAX_CAMERAS = 5;
+    const SPARK_POINTS = 60;
+    const PEOPLE_RENDER_MIN_INTERVAL_MS = 250;
+    const LOG_CAP = 500;
+    const LS_KEY_FORM = "pcd_v3_form";
+    const LS_KEY_THEME = "pcd_v3_theme";
+
+    // ─── Feature flag — must mirror MASTERS_ENABLED in config.yaml ────
+    // true  → per-camera Master/Slave checkbox + `role` in start_stream payload
+    // false → no role UI, payload shape unchanged from the legacy spec
+    const MASTERS_ENABLED = true;
+
+    /* ─────────────────────── state ─────────────────────── */
     let socket = null;
-    // tiles[camId] = { tileEl, imgEl, phEl, metaEl, statsEls, statusPill }
-    const tiles = {};
-    // latestByCam[camId] = last detections payload (used for aggregation + people table)
-    const latestByCam = {};
+    let totalMsgs = 0;
+    let lastLatencyMs = null;
+    let reconnectAttempt = 0;
+    let reconnectTimer = null;
+    const tiles = {};         // tiles[camId] = { ... }
+    const latestByCam = {};   // latestByCam[camId] = last detections
+    const sparkByCam = {};    // sparkByCam[camId] = circular buffer
+    const fpsByCam = {};      // fpsByCam[camId] = recent timestamps[]
 
+    /* ─────────────────────── helpers ─────────────────────── */
     const $ = (id) => document.getElementById(id);
-    const t = () => new Date().toLocaleTimeString();
-
-    function log(msg, kind) {
-      const node = document.createElement("div");
-      node.textContent = "[" + t() + "] " + msg;
-      node.style.color = kind === "err" ? "#c53030" : (kind === "ok" ? "#198754" : "#374151");
-      $("logs").prepend(node);
-    }
+    const tnow = () => new Date().toLocaleTimeString();
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
     function setStatus(txt, cls) {
       const s = $("status");
@@ -536,35 +772,144 @@
       s.textContent = txt;
     }
 
-    /* ── camera input rows ─────────────────────────────────────── */
+    /* ── log with cap ────────────────────────────────────── */
+    let logLines = 0;
+    function log(msg, kind) {
+      const node = document.createElement("div");
+      node.className = "line " + (kind || "");
+      node.textContent = "[" + tnow() + "] " + msg;
+      const box = $("logs");
+      box.prepend(node);
+      logLines++;
+      while (logLines > LOG_CAP && box.lastChild) {
+        box.removeChild(box.lastChild);
+        logLines--;
+      }
+      $("log_count").textContent = logLines + " entries";
+    }
+
+    /* ── toasts ──────────────────────────────────────────── */
+    function toast(msg, kind = "ok", ttl = 2400) {
+      const t = document.createElement("div");
+      t.className = "toast " + kind;
+      t.textContent = msg;
+      $("toasts").appendChild(t);
+      setTimeout(() => {
+        t.style.transition = "opacity 0.25s, transform 0.25s";
+        t.style.opacity = "0";
+        t.style.transform = "translateX(20px)";
+        setTimeout(() => t.remove(), 280);
+      }, ttl);
+    }
+
+    /* ── theme ──────────────────────────────────────────── */
+    function applyTheme(t) {
+      document.documentElement.setAttribute("data-theme", t);
+      $("btn_theme").textContent = t === "dark" ? "☀" : "🌗";
+    }
+    function toggleTheme() {
+      const cur = document.documentElement.getAttribute("data-theme") || "light";
+      const next = cur === "dark" ? "light" : "dark";
+      try { localStorage.setItem(LS_KEY_THEME, next); } catch (_) { }
+      applyTheme(next);
+    }
+    try {
+      const saved = localStorage.getItem(LS_KEY_THEME);
+      if (saved) applyTheme(saved);
+    } catch (_) { }
+
+    /* ── form state persistence ──────────────────────────── */
+    const FORM_FIELDS = [
+      "host", "client_id", "token", "org_id", "user_id",
+      "threshold", "alert_rate", "fps", "frame_skip", "exit_timeout_sec",
+      "include_annotated_frame", "frame_jpeg_quality", "frame_send_interval",
+      "auto_reconnect",
+    ];
+    function loadForm() {
+      try {
+        const raw = localStorage.getItem(LS_KEY_FORM);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        FORM_FIELDS.forEach((id) => {
+          if (data[id] != null && $(id)) $(id).value = data[id];
+        });
+        if (Array.isArray(data.__cams)) {
+          $("cameras_list").innerHTML = "";
+          data.__cams.forEach(addCameraRow);
+        }
+      } catch (_) { }
+    }
+    function saveForm() {
+      try {
+        const data = {};
+        FORM_FIELDS.forEach((id) => { if ($(id)) data[id] = $(id).value; });
+        data.__cams = readCameras();
+        localStorage.setItem(LS_KEY_FORM, JSON.stringify(data));
+      } catch (_) { }
+    }
+
+    /* ─────────────────────── camera input rows ─────────────────────── */
     function addCameraRow(prefill) {
       const list = $("cameras_list");
       const rows = list.querySelectorAll(".cam-row");
       if (rows.length >= MAX_CAMERAS) {
-        log("Max " + MAX_CAMERAS + " cameras allowed", "err");
+        toast("Max " + MAX_CAMERAS + " cameras allowed", "err");
         return;
       }
-      const nextId = prefill?.camera_id ?? (rows.length ? Math.max(...[...rows].map(r =>
-        Number(r.querySelector(".cam-id").value) || 0)) + 1 : 1);
+      const nextId = prefill?.camera_id ?? (rows.length
+        ? Math.max(...[...rows].map(r => Number(r.querySelector(".cam-id").value) || 0)) + 1
+        : 1);
+
+      // Default role: first row is MASTER (only when the flag is on); others slave.
+      const isFirst = rows.length === 0;
+      const role = String(prefill?.role ?? (isFirst ? "MASTER" : "SLAVE")).toUpperCase();
+      const isMaster = role === "MASTER";
+
       const row = document.createElement("div");
-      row.className = "cam-row";
-      row.innerHTML =
-        '<div><div class="lbl">Camera ID</div>' +
-        '<input class="cam-id" type="number" value="' + nextId + '"></div>' +
-        '<div><div class="lbl">Stream URL</div>' +
-        '<input class="cam-url" placeholder="rtsp://..." value="' +
-        (prefill?.stream_url ?? "") + '"></div>' +
-        '<div><div class="lbl">&nbsp;</div>' +
-        '<button class="remove" type="button">Remove</button></div>';
+      row.className = "cam-row" + (MASTERS_ENABLED ? " with-role" : "")
+        + (MASTERS_ENABLED && isMaster ? " is-master" : "");
+
+      const roleHtml = MASTERS_ENABLED ? `
+        <div><div class="lbl">Role</div>
+          <label class="role-toggle" title="Enable to mark this camera as MASTER">
+            <input class="cam-master" type="checkbox" ${isMaster ? "checked" : ""}>
+            <span class="role-label">${isMaster ? "Master" : "Slave"}</span>
+          </label></div>` : "";
+
+      row.innerHTML = `
+        <div><div class="lbl">Camera ID</div>
+          <input class="cam-id" type="number" value="${nextId}"></div>
+        <div><div class="lbl">Stream URL</div>
+          <input class="cam-url" placeholder="rtsp://…" value="${prefill?.stream_url ?? ""}"></div>
+        ${roleHtml}
+        <div><div class="lbl">&nbsp;</div>
+          <button class="remove" type="button">Remove</button></div>`;
       list.appendChild(row);
+
       row.querySelector(".remove").addEventListener("click", () => {
         row.remove();
-        refreshPreview();
+        schedulePreview();
+        saveForm();
+        updateRoleSummary();
       });
-      row.querySelectorAll("input").forEach((el) =>
-        el.addEventListener("input", refreshPreview)
-      );
-      refreshPreview();
+      row.querySelectorAll("input").forEach((el) => {
+        el.addEventListener("input", () => { schedulePreview(); saveForm(); });
+      });
+      const cb = row.querySelector(".cam-master");
+      if (cb) {
+        cb.addEventListener("change", () => {
+          const on = cb.checked;
+          row.classList.toggle("is-master", on);
+          const lbl = row.querySelector(".role-label");
+          if (lbl) lbl.textContent = on ? "Master" : "Slave";
+          schedulePreview();
+          saveForm();
+          updateRoleSummary();
+        });
+      }
+      schedulePreview();
+      saveForm();
+      updateRoleSummary();
     }
 
     function readCameras() {
@@ -572,12 +917,30 @@
       document.querySelectorAll("#cameras_list .cam-row").forEach((row) => {
         const id = Number(row.querySelector(".cam-id").value);
         const url = row.querySelector(".cam-url").value.trim();
-        if (Number.isFinite(id) && url) out.push({ camera_id: id, stream_url: url });
+        if (!Number.isFinite(id) || !url) return;
+        const cam = { camera_id: id, stream_url: url };
+        if (MASTERS_ENABLED) {
+          const cb = row.querySelector(".cam-master");
+          cam.role = cb && cb.checked ? "MASTER" : "SLAVE";
+        }
+        out.push(cam);
       });
       return out;
     }
 
-    /* ── start_stream payload ──────────────────────────────────── */
+    function updateRoleSummary() {
+      const pill = $("role_summary");
+      if (!pill) return;
+      if (!MASTERS_ENABLED) { pill.hidden = true; return; }
+      pill.hidden = false;
+      let masters = 0, slaves = 0;
+      document.querySelectorAll("#cameras_list .cam-row .cam-master").forEach((cb) => {
+        if (cb.checked) masters++; else slaves++;
+      });
+      pill.innerHTML = `<b>${masters}</b> master${masters === 1 ? "" : "s"} · <b>${slaves}</b> slave${slaves === 1 ? "" : "s"}`;
+    }
+
+    /* ─────────────────────── start_stream payload ─────────────────────── */
     function startPayload() {
       return {
         action: "start_stream",
@@ -595,39 +958,100 @@
       };
     }
 
-    function refreshPreview() {
-      $("preview").value = JSON.stringify(startPayload(), null, 2);
+    /* ─────────────────────── render scheduling ─────────────────────── */
+    let previewPending = false;
+    function schedulePreview() {
+      if (previewPending) return;
+      previewPending = true;
+      requestAnimationFrame(() => {
+        previewPending = false;
+        $("preview").value = JSON.stringify(startPayload(), null, 2);
+      });
     }
 
-    /* ── websocket ─────────────────────────────────────────────── */
+    let aggregatesPending = false;
+    function scheduleAggregates() {
+      if (aggregatesPending) return;
+      aggregatesPending = true;
+      requestAnimationFrame(() => {
+        aggregatesPending = false;
+        renderAggregates();
+      });
+    }
+
+    let peopleScheduled = false;
+    let peopleLastRenderAt = 0;
+    function schedulePeopleTable() {
+      if (peopleScheduled) return;
+      peopleScheduled = true;
+      const since = performance.now() - peopleLastRenderAt;
+      const wait = Math.max(0, PEOPLE_RENDER_MIN_INTERVAL_MS - since);
+      setTimeout(() => {
+        peopleScheduled = false;
+        peopleLastRenderAt = performance.now();
+        renderPeopleTable();
+      }, wait);
+    }
+
+    /* ─────────────────────── websocket ─────────────────────── */
     function wsUrl() {
       const host = $("host").value.trim();
       const clientId = encodeURIComponent($("client_id").value.trim());
       const token = encodeURIComponent($("token").value.trim());
-      return "ws://" + host + "/ws/people_counting/" + clientId + "?token=" + token;
+      const proto = location.protocol === "https:" ? "wss:" : "ws:";
+      return proto + "//" + host + "/ws/people_counting/" + clientId + "?token=" + token;
     }
 
     function connect() {
-      if (socket && socket.readyState === WebSocket.OPEN) return log("Already connected");
-      socket = new WebSocket(wsUrl());
-      setStatus("Connecting...", "warn");
-      log("Connecting " + wsUrl());
-      socket.onopen = () => { setStatus("Connected", "ok"); log("Connected", "ok"); };
-      socket.onclose = () => {
-        setStatus("Disconnected", "warn"); log("Disconnected");
-        Object.keys(tiles).forEach(markTileDisconnected);
+      if (socket && socket.readyState === WebSocket.OPEN) return log("Already connected", "warn");
+      clearTimeout(reconnectTimer);
+      const url = wsUrl();
+      socket = new WebSocket(url);
+      setStatus("Connecting…", "warn");
+      log("Connecting " + url);
+
+      socket.onopen = () => {
+        setStatus("Connected", "ok");
+        log("Connected", "ok");
+        toast("Connected", "ok");
+        reconnectAttempt = 0;
       };
-      socket.onerror = () => { setStatus("Error", "bad"); log("Socket error", "err"); };
+      socket.onclose = (ev) => {
+        setStatus("Disconnected", "warn");
+        log("Disconnected (code=" + ev.code + ")", "warn");
+        Object.keys(tiles).forEach(markTileDisconnected);
+        const auto = $("auto_reconnect").value === "true";
+        if (auto && ev.code !== 1000) scheduleReconnect();
+      };
+      socket.onerror = () => {
+        setStatus("Error", "bad");
+        log("Socket error", "err");
+      };
       socket.onmessage = (e) => {
-        try { onMsg(JSON.parse(e.data)); } catch (_) { log("Non JSON: " + e.data, "err"); }
+        totalMsgs++;
+        $("msgrate").textContent = "msgs " + totalMsgs;
+        try {
+          onMsg(JSON.parse(e.data));
+        } catch (_) {
+          log("Non-JSON message: " + e.data, "err");
+        }
       };
     }
 
+    function scheduleReconnect() {
+      reconnectAttempt = Math.min(reconnectAttempt + 1, 7);
+      const delay = clamp(1000 * Math.pow(2, reconnectAttempt - 1), 1000, 30000);
+      log("Reconnecting in " + Math.round(delay / 1000) + "s (attempt " + reconnectAttempt + ")", "warn");
+      reconnectTimer = setTimeout(connect, delay);
+    }
+
     function send(data) {
-      if (!socket || socket.readyState !== WebSocket.OPEN) return log("Socket not connected", "err");
+      if (!socket || socket.readyState !== WebSocket.OPEN) {
+        toast("Socket not connected", "err");
+        return log("Socket not connected", "err");
+      }
       socket.send(JSON.stringify(data));
-      log("Sent action: " + data.action +
-        (data.camera_id != null ? " (cam " + data.camera_id + ")" : ""), "ok");
+      log("→ " + data.action + (data.camera_id != null ? " (cam " + data.camera_id + ")" : ""), "ok");
     }
 
     function stopCamera(camId) {
@@ -639,45 +1063,62 @@
       });
     }
 
-    /* ── per-camera tiles ──────────────────────────────────────── */
+    /* ─────────────────────── tiles ─────────────────────── */
     function ensureTile(camId) {
       if (tiles[camId]) return tiles[camId];
-
       const grid = $("tiles");
-      // remove the initial placeholder, if present
       const ph = grid.querySelector(".placeholder");
       if (ph) ph.remove();
 
       const tile = document.createElement("div");
       tile.className = "tile";
-      tile.innerHTML =
-        '<div class="tile-head">' +
-        '  <span class="title">Camera ' + camId +
-        '    <span class="pill" data-role="pill">connecting</span></span>' +
-        '  <button class="muted" data-role="stop">Stop</button>' +
-        '</div>' +
-        '<div class="video-wrap">' +
-        '  <div class="placeholder" data-role="ph">Waiting for first annotated frame…</div>' +
-        '  <img alt="cam ' + camId + '" data-role="img" style="display:none">' +
-        '  <div class="video-meta" data-role="meta" style="display:none"></div>' +
-        '</div>' +
-        '<div class="tile-stats">' +
-        '  <div><span>Visible</span><b data-role="visible">0</b></div>' +
-        '  <div><span>Occupancy</span><b data-role="occupancy">0</b></div>' +
-        '  <div><span>Entries</span><b data-role="entries">0</b></div>' +
-        '  <div><span>Exits</span><b data-role="exits">0</b></div>' +
-        '  <div><span>Net</span><b data-role="net">0</b></div>' +
-        '  <div><span>Occ %</span><b data-role="pct">0%</b></div>' +
-        '</div>';
+      tile.innerHTML = `
+        <div class="tile-head">
+          <span class="title">Camera ${camId}
+            <span class="pill" data-role="pill">connecting</span></span>
+          <span class="actions-row">
+            <button class="ghost" data-role="pause" title="Pause/resume frame rendering">⏸</button>
+            <button class="ghost" data-role="full" title="Fullscreen">⛶</button>
+            <button class="ghost" data-role="stop">Stop</button>
+          </span>
+        </div>
+        <div class="video-wrap" data-role="vwrap">
+          <div class="placeholder" data-role="ph">Waiting for first annotated frame…</div>
+          <img alt="cam ${camId}" data-role="img" style="display:none">
+          <div class="video-meta" data-role="meta" style="display:none"></div>
+          <div class="video-fps" data-role="fps" style="display:none">0 fps</div>
+          <div class="video-paused" data-role="paused" style="display:none">PAUSED</div>
+        </div>
+        <div class="tile-stats">
+          <div><span>Visible</span><b data-role="visible">0</b></div>
+          <div><span>Occupancy</span><b data-role="occupancy">0</b></div>
+          <div><span>Entries</span><b data-role="entries">0</b></div>
+          <div><span>Exits</span><b data-role="exits">0</b></div>
+          <div><span>Net</span><b data-role="net">0</b></div>
+          <div><span>Occ %</span><b data-role="pct">0%</b></div>
+        </div>
+        <div class="spark-wrap">
+          <div class="spark-label">Occupancy · last ${SPARK_POINTS} samples</div>
+          <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none">
+            <polyline data-role="poly" points="" fill="none" stroke="var(--brand)" stroke-width="1.5"
+              stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>`;
       grid.appendChild(tile);
 
-      const r = (role) => tile.querySelector('[data-role="' + role + '"]');
+      const r = (role) => tile.querySelector(`[data-role="${role}"]`);
       const refs = {
         tileEl: tile,
+        wrap: r("vwrap"),
         imgEl: r("img"),
         phEl: r("ph"),
         metaEl: r("meta"),
+        fpsEl: r("fps"),
+        pausedEl: r("paused"),
         statusPill: r("pill"),
+        poly: r("poly"),
+        paused: false,
+        objUrl: null,
         stats: {
           visible: r("visible"),
           occupancy: r("occupancy"),
@@ -687,8 +1128,25 @@
           pct: r("pct"),
         },
       };
+
       r("stop").addEventListener("click", () => stopCamera(camId));
+      r("pause").addEventListener("click", () => {
+        refs.paused = !refs.paused;
+        refs.pausedEl.style.display = refs.paused ? "flex" : "none";
+        r("pause").textContent = refs.paused ? "▶" : "⏸";
+      });
+      r("full").addEventListener("click", () => {
+        const el = refs.wrap;
+        if (document.fullscreenElement) {
+          document.exitFullscreen?.();
+        } else {
+          el.requestFullscreen?.();
+        }
+      });
+
       tiles[camId] = refs;
+      sparkByCam[camId] = [];
+      fpsByCam[camId] = [];
       return refs;
     }
 
@@ -697,31 +1155,84 @@
       if (!tile) return;
       tile.statusPill.textContent = "stopped";
       tile.statusPill.className = "pill";
+      tile.tileEl.classList.remove("alerting");
     }
 
     function removeTile(camId) {
       const tile = tiles[camId];
       if (!tile) return;
+      if (tile.objUrl) { URL.revokeObjectURL(tile.objUrl); tile.objUrl = null; }
       tile.tileEl.remove();
       delete tiles[camId];
       delete latestByCam[camId];
-      // restore placeholder if no tiles left
+      delete sparkByCam[camId];
+      delete fpsByCam[camId];
       const grid = $("tiles");
       if (!grid.querySelector(".tile")) {
-        grid.innerHTML =
-          '<div class="placeholder" style="color:#94a3b8;padding:18px;">' +
-          'No streams running. Add cameras above and click Start Stream.</div>';
+        grid.innerHTML = `<div class="placeholder" style="color:var(--muted);padding:18px;text-align:center;">
+          No streams running. Add cameras above and click <b>Start Stream</b>.</div>`;
       }
-      renderAggregates();
-      renderPeopleTable();
+      scheduleAggregates();
+      schedulePeopleTable();
+    }
+
+    /* ── base64 → blob URL pipeline (avoids double-decode and lets the
+       browser GC the previous frame) ─────────────────────────── */
+    function setImgFromBase64(tile, b64) {
+      const len = b64.length;
+      const binary = atob(b64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "image/jpeg" });
+      const url = URL.createObjectURL(blob);
+      const old = tile.objUrl;
+      tile.imgEl.src = url;
+      tile.objUrl = url;
+      if (old) {
+        tile.imgEl.addEventListener("load", () => URL.revokeObjectURL(old), { once: true });
+      }
+    }
+
+    function pushSpark(camId, value) {
+      const buf = sparkByCam[camId];
+      if (!buf) return;
+      buf.push(value);
+      if (buf.length > SPARK_POINTS) buf.shift();
+      const tile = tiles[camId];
+      if (!tile) return;
+      const max = Math.max(1, ...buf);
+      const pts = buf.map((v, i) => {
+        const x = (i / (SPARK_POINTS - 1)) * 100;
+        const y = 30 - (v / max) * 26 - 2;
+        return x.toFixed(1) + "," + y.toFixed(1);
+      }).join(" ");
+      tile.poly.setAttribute("points", pts);
+    }
+
+    function pushFpsSample(camId) {
+      const buf = fpsByCam[camId];
+      if (!buf) return 0;
+      const now = performance.now();
+      buf.push(now);
+      while (buf.length > 1 && now - buf[0] > 3000) buf.shift();
+      const tile = tiles[camId];
+      if (!tile) return 0;
+      const fps = buf.length > 1
+        ? ((buf.length - 1) * 1000) / (buf[buf.length - 1] - buf[0])
+        : 0;
+      tile.fpsEl.style.display = "block";
+      tile.fpsEl.textContent = fps.toFixed(1) + " fps";
+      return fps;
     }
 
     function renderTile(d) {
       const camId = d.camid;
       const tile = ensureTile(camId);
 
-      tile.statusPill.textContent = d.is_alert_triggered ? "alert" : "live";
-      tile.statusPill.className = "pill " + (d.is_alert_triggered ? "alert" : "live");
+      const alerting = !!d.is_alert_triggered;
+      tile.statusPill.textContent = alerting ? "alert" : "live";
+      tile.statusPill.className = "pill " + (alerting ? "alert" : "live");
+      tile.tileEl.classList.toggle("alerting", alerting);
 
       tile.stats.visible.textContent = d.Total_people_detected ?? 0;
       tile.stats.occupancy.textContent = d.Current_occupancy ?? 0;
@@ -730,22 +1241,23 @@
       tile.stats.net.textContent = d.Net_count ?? 0;
       tile.stats.pct.textContent = (Number(d.Occupancy_percentage ?? 0).toFixed(1)) + "%";
 
+      pushSpark(camId, Number(d.Current_occupancy ?? 0));
+      pushFpsSample(camId);
+
       const b64 = d.annotated_frame;
-      if (b64) {
-        tile.imgEl.src = "data:image/jpeg;base64," + b64;
+      if (b64 && !tile.paused) {
+        setImgFromBase64(tile, b64);
         tile.imgEl.style.display = "block";
         tile.phEl.style.display = "none";
         tile.metaEl.style.display = "block";
         tile.metaEl.textContent =
-          "cam=" + (d.camid ?? "-") +
-          "  frame#=" + (d.Frame_Count ?? "-") +
-          "  proc=" + (d.processing_time_ms ?? "-") + "ms" +
-          "  vis=" + (d.Total_people_detected ?? 0) +
-          "  occ=" + (d.Current_occupancy ?? 0);
+          `cam=${d.camid ?? "-"}  frame#=${d.Frame_Count ?? "-"}  ` +
+          `proc=${d.processing_time_ms ?? "-"}ms  ` +
+          `vis=${d.Total_people_detected ?? 0}  occ=${d.Current_occupancy ?? 0}`;
       }
     }
 
-    /* ── aggregate summary across cameras ──────────────────────── */
+    /* ─────────────────────── aggregates ─────────────────────── */
     function renderAggregates() {
       const cams = Object.values(latestByCam);
       const sum = (k) => cams.reduce((a, d) => a + (Number(d[k]) || 0), 0);
@@ -755,22 +1267,28 @@
       $("m_exits").textContent = sum("Total_exits");
       $("m_net").textContent = sum("Net_count");
       $("m_cams").textContent = cams.length;
+      const alerting = cams.filter((d) => d.is_alert_triggered);
+      $("m_alerts").textContent = alerting.length;
+      $("m_alert_card").classList.toggle("alert", alerting.length > 0);
 
       if (!cams.length) {
-        $("meta").textContent = "Waiting for data...";
+        $("meta").textContent = "Waiting for data…";
         return;
       }
       const camIds = Object.keys(latestByCam).sort((a, b) => Number(a) - Number(b));
-      const alerting = cams.filter((d) => d.is_alert_triggered).map((d) => d.camid);
       $("meta").textContent =
-        "Cams [" + camIds.join(", ") + "]" +
-        (alerting.length ? "  |  ALERT on " + alerting.join(", ") : "");
+        `Cams [${camIds.join(", ")}]` +
+        (alerting.length ? `  ·  ALERT on ${alerting.map((d) => d.camid).join(", ")}` : "");
     }
 
+    /* ─────────────────────── people table ─────────────────────── */
     function renderPeopleTable() {
       const tb = $("people_tbody");
-      tb.innerHTML = "";
+      const filter = $("people_search").value.trim().toLowerCase();
       const camIds = Object.keys(latestByCam).sort((a, b) => Number(a) - Number(b));
+      const frag = document.createDocumentFragment();
+      let rendered = 0;
+
       for (const camId of camIds) {
         const d = latestByCam[camId];
         const ids = d.People_ids || [];
@@ -778,35 +1296,47 @@
         const conf = d.Confidence_scores || [];
         const entries = d.Entry_time || [];
         for (let i = 0; i < ids.length; i++) {
+          const row = [camId, ids[i] ?? "-", dwell[i] ?? "-", conf[i] ?? "-", entries[i] ?? "-"];
+          if (filter && !row.some((c) => String(c).toLowerCase().includes(filter))) continue;
           const tr = document.createElement("tr");
           tr.innerHTML =
-            "<td>" + camId + "</td>" +
-            "<td>" + (ids[i] ?? "-") + "</td>" +
-            "<td>" + (dwell[i] ?? "-") + "</td>" +
-            "<td>" + (conf[i] ?? "-") + "</td>" +
-            "<td>" + (entries[i] ?? "-") + "</td>";
-          tb.appendChild(tr);
+            `<td>${row[0]}</td>` +
+            `<td><span class="gid">${row[1]}</span></td>` +
+            `<td>${row[2]}</td>` +
+            `<td>${row[3]}</td>` +
+            `<td>${row[4]}</td>`;
+          frag.appendChild(tr);
+          rendered++;
         }
+      }
+      tb.replaceChildren(frag);
+      if (!rendered && tb.childElementCount === 0) {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td colspan="5" style="text-align:center;color:var(--muted);padding:14px;">
+          ${filter ? "No matches." : "No people visible."}</td>`;
+        tb.appendChild(tr);
       }
     }
 
-    /* ── inbound message dispatch ──────────────────────────────── */
+    /* ─────────────────────── inbound dispatch ─────────────────────── */
     function onMsg(m) {
       if (m.event) {
         const camStr = m.camera_id != null ? " (cam " + m.camera_id + ")" : "";
-        log("Event " + m.event + camStr +
-          (m.message ? " - " + m.message : ""),
-          m.event === "error" ? "err" : "ok");
-        if (m.error_message) log("  -> " + m.error_message, "err");
+        const kind = m.event === "error" ? "err" : "ok";
+        log("Event " + m.event + camStr + (m.message ? " — " + m.message : ""), kind);
+        if (m.error_message) log("  ↳ " + m.error_message, "err");
 
         if (m.event === "stream_started" && m.camera_id != null) {
           ensureTile(m.camera_id);
+          toast("Stream started · cam " + m.camera_id, "ok");
         }
         if (m.event === "stream_stopped" && m.camera_id != null) {
           removeTile(m.camera_id);
+          toast("Stream stopped · cam " + m.camera_id, "warn");
         }
         if (m.event === "all_stopped") {
           Object.keys(tiles).forEach((id) => removeTile(Number(id)));
+          toast("All streams stopped", "warn");
         }
         if (m.event === "error" && m.camera_id != null) {
           const tile = tiles[m.camera_id];
@@ -822,20 +1352,32 @@
       const d = m.detections;
       latestByCam[d.camid] = d;
 
+      // server payload age (rough; depends on client/server clock skew)
+      if (d.Time_stamp) {
+        const t = Date.parse(d.Time_stamp);
+        if (!Number.isNaN(t)) {
+          lastLatencyMs = Math.max(0, Date.now() - t);
+          $("latency").textContent = "lat " + lastLatencyMs + "ms";
+        }
+      }
+
       renderTile(d);
-      renderAggregates();
-      renderPeopleTable();
+      scheduleAggregates();
+      schedulePeopleTable();
 
       if (d.is_alert_triggered) {
         log("ALERT cam=" + d.camid + ": " + (d.Status || "triggered"), "err");
       }
     }
 
-    /* ── wiring ────────────────────────────────────────────────── */
+    /* ─────────────────────── wiring ─────────────────────── */
     $("btn_connect").onclick = connect;
     $("btn_start").onclick = () => {
       const p = startPayload();
-      if (!p.cameras.length) return log("Add at least one camera", "err");
+      if (!p.cameras.length) {
+        toast("Add at least one camera", "err");
+        return;
+      }
       send(p);
     };
     $("btn_stop_all").onclick = () => send({
@@ -843,24 +1385,59 @@
       org_id: Number($("org_id").value),
       user_id: Number($("user_id").value),
     });
-    $("btn_close").onclick = () => { if (socket) socket.close(); };
+    $("btn_close").onclick = () => {
+      clearTimeout(reconnectTimer);
+      reconnectAttempt = 0;
+      if (socket) socket.close(1000, "user disconnect");
+    };
     $("btn_add_camera").onclick = () => addCameraRow();
+    $("btn_theme").onclick = toggleTheme;
 
-    [
-      "org_id", "user_id", "threshold", "alert_rate", "fps", "frame_skip",
-      "exit_timeout_sec",
-      "include_annotated_frame", "frame_jpeg_quality", "frame_send_interval",
-    ].forEach((id) => {
+    $("btn_copy_payload").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText($("preview").value);
+        toast("Payload copied", "ok");
+      } catch (_) {
+        toast("Copy failed", "err");
+      }
+    };
+
+    $("btn_export_logs").onclick = () => {
+      const lines = [...$("logs").querySelectorAll(".line")].map((n) => n.textContent).reverse();
+      const blob = new Blob([lines.join("\n") + "\n"], { type: "text/plain" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "people-counting-logs-" + new Date().toISOString().replace(/[:.]/g, "-") + ".txt";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    };
+
+    $("people_search").addEventListener("input", () => schedulePeopleTable());
+
+    FORM_FIELDS.forEach((id) => {
       const el = $(id);
+      if (!el) return;
       const evt = el.tagName === "SELECT" ? "change" : "input";
-      el.addEventListener(evt, refreshPreview);
+      el.addEventListener(evt, () => { schedulePreview(); saveForm(); });
     });
 
-    // seed with the example single-camera config from the spec
-    addCameraRow({
-      camera_id: 1,
-      stream_url: "rtsp://admin:industry4@192.168.1.8:554/cam/realmonitor?channel=1&subtype=0",
+    /* keyboard shortcuts */
+    document.addEventListener("keydown", (e) => {
+      if (e.target.matches("input, textarea, select")) return;
+      if (e.code === "KeyC" && !e.ctrlKey && !e.metaKey) connect();
+      if (e.code === "KeyS" && !e.ctrlKey && !e.metaKey) $("btn_start").click();
+      if (e.code === "Escape") $("btn_close").click();
     });
+
+    /* boot */
+    loadForm();
+    if (!document.querySelectorAll("#cameras_list .cam-row").length) {
+      addCameraRow({
+        camera_id: 1,
+        stream_url: "rtsp://admin:industry4@192.168.1.8:554/cam/realmonitor?channel=1&subtype=0",
+      });
+    }
+    schedulePreview();
   </script>
 </body>
 

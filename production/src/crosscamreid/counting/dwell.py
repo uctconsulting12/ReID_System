@@ -43,15 +43,15 @@ class DwellTracker:
 
     @staticmethod
     def average(tracker: EntryExitTracker, now: float | None = None) -> str:
+        """Mean dwell across every SID that has ever visited *this camera*.
+
+        Per-SID total = completed visits on this cam + any in-progress visit
+        on this cam. The mean is taken over the count of unique visiting
+        SIDs, so each person contributes once regardless of how many times
+        they re-entered.
+        """
         now = time.time() if now is None else now
-        active = tracker.active_items()
-        if active:
-            durations = [max(0.0, now - info.entry_time) for _, info in active]
-            return _format_hms(sum(durations) / len(durations))
-
-        recent = tracker.recent_exits(10)
-        if recent:
-            durations = [d for _, d, _ in recent]
-            return _format_hms(sum(durations) / len(durations))
-
-        return "00:00:00"
+        durations = tracker.cam_visitor_dwell_sec(now=now)
+        if not durations:
+            return "00:00:00"
+        return _format_hms(sum(durations) / len(durations))

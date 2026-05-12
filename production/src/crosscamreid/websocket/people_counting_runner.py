@@ -39,7 +39,7 @@ from ..counting.kvs_resolver import resolve_stream_url
 from ..counting.occupancy import OccupancyTracker
 from ..counting.org_registry import OrgRegistry, OrgResources
 from ..overlay import draw_overlay
-from ..processor import UNKNOWN_LABEL, process_master
+from ..processor import UNKNOWN_LABEL, process_master, process_slave
 from ..state import TIDStateManager
 
 logger = logging.getLogger("people_counting.runner")
@@ -91,6 +91,10 @@ class CameraSpec:
     camera_id: int
     stream_url: str
     region: str | None = None
+    # "MASTER" → enrolls new SIDs and matches against the gallery.
+    # "SLAVE"  → matches only; never creates new identities.
+    # Default is "MASTER" so omitting the field preserves legacy behaviour.
+    role: str = "MASTER"
 
 
 # ── per-camera worker ────────────────────────────────────────────────────────
@@ -111,6 +115,11 @@ class _CameraWorker:
         self.spec = spec
         self.cam_id = int(spec.camera_id)
         self.resources = resources
+        self.role = (spec.role or "MASTER").upper()
+        # Pick the per-detection processor once at worker construction time.
+        # MASTER  → search + enroll (creates new SIDs).
+        # SLAVE   → search-only (only recognizes SIDs that masters created).
+        self._process_fn = process_slave if self.role == "SLAVE" else process_master
 
         cfg = session.config
         self.config = cfg
@@ -228,9 +237,11 @@ class _CameraWorker:
         self._send({
             "event": "stream_started",
             "camera_id": self.cam_id,
+            "role": self.role,
             "status": "ok",
             "message": "Stream initialized successfully",
         })
+        logger.info("[cam=%s] role=%s started", self.cam_id, self.role)
 
         first_frame_deadline = time.time() + 30.0
         got_first_frame = False
@@ -340,6 +351,8 @@ class _CameraWorker:
                 annotated_b64: str | None = None
                 if self.session.include_annotated_frame:
                     try:
+                        dwell_by_sid = dict(zip(people_ids, dwell_times))
+                        avg_dwell_str = DwellTracker.average(self._entry_exit, now=now)
                         annotated = draw_overlay(
                             frame.copy(),
                             people_visible_records,
@@ -348,6 +361,9 @@ class _CameraWorker:
                             cam_label=str(self.cam_id),
                             mode_label="MASTER",
                             config=self.config,
+                            dwell_by_sid=dwell_by_sid,
+                            avg_dwell=avg_dwell_str,
+                            occupancy=self._entry_exit.current_occupancy,
                         )
                         annotated_b64 = _encode_jpeg_b64(
                             annotated, self.session.frame_jpeg_quality
@@ -433,7 +449,7 @@ class _CameraWorker:
 
             for i in range(len(boxes)):
                 bbox = [float(c) for c in boxes[i]]
-                rec = process_master(
+                rec = self._process_fn(
                     frame, bbox, kp_xy[i], kp_conf[i], int(stable_tids[i]),
                     self.resources.reid_backend,
                     self.resources.store,
@@ -651,7 +667,12 @@ class PeopleCountingSession:
         self._send_lock = threading.Lock()
         self._closed = False
 
-        self._resources: OrgResources = self.registry.acquire(self.org_id)
+        self._resources: OrgResources = self.registry.acquire(
+            self.org_id,
+            reset_collection=bool(
+                getattr(self.config.database.qdrant, "reset_on_connect", False)
+            ),
+        )
 
     def _peer_active_for(self, sid: str, caller):
         """Yield in-progress entry_time floats for `sid` on every camera

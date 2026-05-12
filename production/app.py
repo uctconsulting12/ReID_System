@@ -27,6 +27,14 @@ def parse_args():
 def main() -> int:
     args = parse_args()
     config = load_config(args.config)
+    if not config.cameras:
+        sys.stderr.write(
+            "ERROR: the CLI runner requires a 'cameras:' list in "
+            f"{args.config}. The block is optional for the people-counting "
+            "and HLS servers (which receive cameras over the wire), but "
+            "app.py has no other source for them.\n"
+        )
+        return 2
     return run_app(config)
 
 

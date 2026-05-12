@@ -47,9 +47,27 @@ class SIDStore:
             self._drop_collection_if_exists(collection, dim)
 
         self.collection = self._resolve_collection(collection, dim)
+        self._dim = int(dim)
 
         self._next_sid, self._counts = self._scan_existing()
         print(f"[Qdrant] Next SID: {self._next_sid} (existing SIDs: {len(self._counts)})")
+
+    def reset(self) -> None:
+        """Drop and recreate the active collection, then clear in-memory
+        state. After this call the gallery is empty and the next enrolled
+        person will be SID 1 again. Caller is responsible for ensuring no
+        concurrent users are mid-write."""
+        try:
+            self.client.delete_collection(collection_name=self.collection)
+        except Exception as exc:
+            print(f"[Qdrant] reset: delete_collection({self.collection}) failed: {exc}")
+        self.client.create_collection(
+            collection_name=self.collection,
+            vectors_config=qm.VectorParams(size=self._dim, distance=qm.Distance.COSINE),
+        )
+        self._next_sid = 1
+        self._counts = {}
+        print(f"[Qdrant] Collection '{self.collection}' reset (dim={self._dim})")
 
     def _drop_collection_if_exists(self, name: str, dim: int) -> None:
         """Delete just this collection (and its dim-suffixed sibling, if any).

@@ -76,10 +76,20 @@ def _parse_cameras(raw: Any) -> tuple[list[CameraSpec], list[str]]:
         if region is not None and not isinstance(region, str):
             errors.append(f"cameras[{i}].region must be a string if provided")
             region = None
+        # Optional role: defaults to MASTER (legacy behaviour) when absent
+        # so old clients without master/slave UI keep enrolling new SIDs.
+        role_raw = c.get("role", "MASTER")
+        role = str(role_raw).strip().upper() if role_raw is not None else "MASTER"
+        if role not in {"MASTER", "SLAVE"}:
+            errors.append(
+                f"cameras[{i}].role must be 'MASTER' or 'SLAVE' if provided"
+            )
+            role = "MASTER"
         specs.append(CameraSpec(
             camera_id=cam_id,
             stream_url=url.strip(),
             region=(region.strip() if isinstance(region, str) and region.strip() else None),
+            role=role,
         ))
 
     return specs, errors

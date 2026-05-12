@@ -106,12 +106,45 @@ class OrgRegistry:
         )
         return OrgResources(org_id=int(org_id), reid_backend=reid, store=store)
 
-    def acquire(self, org_id: int) -> OrgResources:
+    def acquire(self, org_id: int, *, reset_collection: bool = False) -> OrgResources:
+        """Acquire shared resources for ``org_id`` and bump the refcount.
+
+        When ``reset_collection`` is True, the org's Qdrant collection is
+        dropped and recreated *before* the new session starts using it, but
+        only when no other session is currently holding the resources
+        (refcount == 0). If sibling sessions are active, the wipe is
+        skipped and a warning is logged so we don't trash a concurrent run.
+        """
         with self._lock:
             res = self._orgs.get(int(org_id))
             if res is None:
                 res = self._build(int(org_id))
                 self._orgs[int(org_id)] = res
+
+            if reset_collection:
+                if res.refcount == 0:
+                    try:
+                        res.store.reset()
+                    except Exception:
+                        logger.exception(
+                            "org=%s reset_on_connect: gallery reset failed",
+                            org_id,
+                        )
+                    else:
+                        with res.dwell_lock:
+                            res.dwell_lifetime_sec.clear()
+                        logger.info(
+                            "org=%s gallery reset on session connect "
+                            "(reset_on_connect=true)", org_id,
+                        )
+                else:
+                    logger.warning(
+                        "org=%s reset_on_connect requested but %d sibling "
+                        "session(s) are active; skipping wipe to avoid "
+                        "trashing concurrent data",
+                        org_id, res.refcount,
+                    )
+
             res.refcount += 1
             return res
 

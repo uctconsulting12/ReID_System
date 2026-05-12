@@ -30,25 +30,92 @@ def _color_for(sid):
     return _COLORS[(int(sid) - 1) % len(_COLORS)]
 
 
-def draw_overlay(frame, records, fps, sid_count, cam_label: str, mode_label: str, config: AppConfig):
-    """Minimal overlay: bbox per detection (color is unique per assigned ID)
-    plus a single label — ``ID <n>`` for a locked SID, ``Identifying...``
-    while the pipeline is still deciding.
+def _sid_dwell_key(sid) -> str | None:
+    """Map a record's ``sid`` to the key used in ``dwell_by_sid`` (``G<n>``).
+    Returns ``None`` for unidentified tracks."""
+    if sid == UNKNOWN_LABEL:
+        return None
+    if isinstance(sid, str):
+        return sid
+    return f"G{int(sid)}"
+
+
+def _put_centered_text(frame, text, center_xy, *, color, font_scale=0.7, thickness=2, pad=4):
+    """Draw ``text`` filled-rect-backed and centered on ``center_xy``."""
+    cx, cy = center_xy
+    (tw, th), baseline = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+    x = int(cx - tw / 2)
+    y = int(cy + th / 2)
+    cv2.rectangle(
+        frame,
+        (x - pad, y - th - pad),
+        (x + tw + pad, y + baseline + pad),
+        color, -1,
+    )
+    cv2.putText(frame, text, (x, y),
+                cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
+
+
+def draw_overlay(
+    frame, records, fps, sid_count, cam_label: str, mode_label: str, config: AppConfig,
+    *,
+    dwell_by_sid: dict[str, str] | None = None,
+    avg_dwell: str = "00:00:00",
+    occupancy: int = 0,
+):
+    """Annotate the frame.
+
+    Per detection:
+      * coloured bbox
+      * ``ID <n>`` (or ``Identifying...``) centered inside the bbox
+      * dwell timer ``HH:MM:SS`` above the bbox top edge
+
+    Per frame (top bar): ``Cam <id> | Avg Dwell: HH:MM:SS | Occupancy: N``.
     """
+    dwell_by_sid = dwell_by_sid or {}
+
     for rec in records:
         x1, y1, x2, y2 = [int(c) for c in rec["bbox"]]
         sid = rec["sid"]
         color = _color_for(sid)
-        label = "Identifying..." if sid == UNKNOWN_LABEL else f"ID {sid}"
+        id_label = "Identifying..." if sid == UNKNOWN_LABEL else f"ID {sid}"
 
         cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
 
-        (tw, th), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
-        cv2.rectangle(frame, (x1, y1 - th - 10), (x1 + tw + 8, y1), color, -1)
-        cv2.putText(frame, label, (x1 + 4, y1 - 5),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+        cx = (x1 + x2) // 2
+        cy = (y1 + y2) // 2
+        _put_centered_text(frame, id_label, (cx, cy),
+                           color=color, font_scale=0.7, thickness=2)
 
+        key = _sid_dwell_key(sid)
+        timer = dwell_by_sid.get(key) if key is not None else None
+        if timer:
+            (tw, th), _ = cv2.getTextSize(timer, cv2.FONT_HERSHEY_SIMPLEX, 0.6, 2)
+            timer_cy = max(y1 - th, th + 4)
+            _put_centered_text(frame, timer, (cx, timer_cy),
+                               color=color, font_scale=0.6, thickness=2)
+
+    _draw_frame_header(frame, cam_label, avg_dwell, occupancy)
     return frame
+
+
+def _draw_frame_header(frame, cam_label: str, avg_dwell: str, occupancy: int):
+    header = f"Cam {cam_label}  |  Avg Dwell: {avg_dwell}  |  Occupancy: {occupancy}"
+    font_scale = 0.7
+    thickness = 2
+    pad = 8
+    (tw, th), baseline = cv2.getTextSize(header, cv2.FONT_HERSHEY_SIMPLEX, font_scale, thickness)
+    fh, fw = frame.shape[:2]
+    bar_h = th + baseline + 2 * pad
+
+    overlay = frame.copy()
+    cv2.rectangle(overlay, (0, 0), (fw, bar_h), (0, 0, 0), -1)
+    cv2.addWeighted(overlay, 0.55, frame, 0.45, 0, frame)
+
+    x = max(pad, (fw - tw) // 2)
+    y = pad + th
+    cv2.putText(frame, header, (x, y),
+                cv2.FONT_HERSHEY_SIMPLEX, font_scale, (255, 255, 255), thickness)
 
 
 def combine_frames_grid(frames: list[np.ndarray | None], labels: list[str], total_width: int):
