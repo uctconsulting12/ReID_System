@@ -1,8 +1,0 @@
-change a line on checkpoint.py on weights_only to false 
-at yaml set reid_backend to fastreid or onnxruntime or tensorrt (in local_video.yaml)
-
-pending tasks : 
-   ROI implementation (dynamically)
-
-
-   
